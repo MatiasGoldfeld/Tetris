@@ -1,36 +1,68 @@
-type t
-
+(** The representation of an a event that can be handled. *)
 type event = 
   | Rotate 
   | Drop
 
-type value =
-  | Empty
-  | Falling of int * int * int
-  | Static of int * int * int
+type color = int * int * int
 
+(** The representation of a value from the playfield. *)
+type v =
+  | Empty
+  | Falling of color
+  | Static of color
+  | Ghost of color
+
+(** The representation of a Tetris gamestate. *)
+type t
+
+(** [init level] is the initialized state of the game starting at [level] *)
+val init : int -> t
+
+(** [score state] is the score of [state]. *)
 val score : t -> int
 
+(** [level state] is the level of [state]. *)
 val level : t -> int
 
-val width : t -> int
+(** [lines state] is the lines cleared of [state]. *)
+val lines : t -> int
 
-val height : t -> int
+(** [field_width state] is the width of the [state]'s playfield. *)
+val field_width : t -> int
 
-val value : t -> int -> int -> value
+(** [field_height state] is the height of the [state]'s playfield. *)
+val field_height : t -> int
 
-(* val queue : t -> tetromino? list *)
+(** [value state x y] is the [v] of [state's] playfield at 
+    coordinates [(x, y)] *)
+val value : t -> int -> int -> v
 
-(* val held : t -> tetromino? *)
+(** [queue state] is the queue of tetrominos to be used next in the game. *)
+val queue : t -> Tetromino.t list
 
-val step : t -> float -> t
+(** [held state] is [Some t] if [t] is the tetromino held in [state],
+    or [Empty] if there is none.*)
+val held : t -> Tetromino.t option
 
+(** [step state delta soft_drop] is the state of [state] after [delta] amount of
+    time. [soft_drop] indicates if soft drop is active. *)
+val step : t -> float -> bool -> t
+
+(** [rotate state rotation] is [state] with an attempt to rotate the falling
+    piece in [rotation]. *)
 val rotate : t -> [`CCW | `CW] -> t
 
+(** [move state direction] is [state] with an attempt to move the falling
+    piece in [direction]. *)
 val move : t -> [`LEFT | `RIGHT] -> t
 
+(** [hold state] is the state of the game after attempting to hold a piece. *)
 val hold : t -> t
 
+(** [hard_drop state] is [state] with the falling piece now static 
+    at the base level. *)
 val hard_drop : t -> t
 
+(** [handle_events state f] is the state after applying [f] to each event in the
+    queue of events in [state] *)
 val handle_events : t -> (event -> unit) -> t
