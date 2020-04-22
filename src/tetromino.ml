@@ -1,4 +1,7 @@
 
+(* oliver *)
+type t = unit
+
 
 let i_default = [[0;0;0;0];[1;1;1;1];[0;0;0;0];[0;0;0;0]]
 let j_default = [[1;0;0];[1;1;1];[0;0;0]]
@@ -55,6 +58,9 @@ let find_coord_val rot x y piece_list size color =
 
 
 
+(* the largest dimension. make tetrominos as big as bounding box *)
+let size =
+  failwith "unimplemented"
 
 let value t rot x y = 
   let s = size t in
