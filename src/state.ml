@@ -53,21 +53,24 @@ let queue (state:t) : Tetromino.t list =
 let held (state:t) : Tetromino.t option =
   state.held
 
+
+(* Matias *)
 let step (state:t) (delta:float) (soft_drop:bool) : t =
   failwith("unimplemented")
 
+(* Oliver *)
 let rotate (state:t) (rotation:[`CCW | `CW]) : t =
   failwith("unimplemented")
 
+(* Oliver *)
 let move (state:t) (direction:[`LEFT | `RIGHT]) : t =
   failwith("unimplemented")
 
+(* Oliver *)
 let hold (state:t) : t =
   failwith "unimplemented"
 
-let soft_drop (state:t) : t =
-  failwith "unimplemented"
-
+(* Oliver *)
 let hard_drop (state:t) : t =
   failwith "unimplemented"
 
