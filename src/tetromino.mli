@@ -1,8 +1,14 @@
+
+(* Invariant type to describe all the different tetromino pieces. *)
+type tetromino = 
+    I | J | L | O | S | T | Z
+
+
 (** The representation of a tetromino. *)
 type t
 
 (** [defaults] is a [t list] of possible tetromino shapes. *)
-val defaults : unit -> t list
+val defaults : t list
 
 (** [size t] is the bounding box of tetromino t. *)
 val size : t -> int
