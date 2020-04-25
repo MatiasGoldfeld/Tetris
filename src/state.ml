@@ -26,8 +26,35 @@ type t = {
   playfield : color option array array
 }
 
-let init (level:int) : t =
-  failwith "unimplemented"
+(** [shuffle lst] is [lst] with its elements randomly shuffled. *)
+let shuffle (lst:'a list) : 'a list =
+  lst
+  |> List.map (fun x -> (Random.bits (), x))
+  |> List.sort compare
+  |> List.map snd
+
+(** [drop piece state] is the [state] with [piece] initialized as the falling
+    piece on the top of the playfield. *)
+let drop (piece:Tetromino.t) (state:t) : t =
+  failwith "Unimplemented"
+
+let init (width:int) (height:int) (level:int) : t =
+  let first, queue =
+    match shuffle Tetromino.defaults @ shuffle Tetromino.defaults with
+    | h::t -> h, t
+    | _ -> failwith "Unexpected empty starting queue"
+  in drop first {
+    score = 0;
+    lines = 0;
+    level = level;
+    events = [];
+    queue = queue;
+    held = None;
+    falling = first;
+    falling_rot = 0;
+    falling_pos = 0, 0;
+    playfield = Array.make_matrix height width None
+  }
 
 let score (state:t) : int =
   state.score
@@ -53,9 +80,12 @@ let queue (state:t) : Tetromino.t list =
 let held (state:t) : Tetromino.t option =
   state.held
 
+(** [step state] is the [state] after the falling piece has stepped down. *)
+let step (state:t) : t =
+  failwith "unimplemented"
 
 (* Matias *)
-let step (state:t) (delta:float) (soft_drop:bool) : t =
+let update (state:t) (delta:float) (soft_drop:bool) : t =
   failwith("unimplemented")
 
 (* Oliver *)
