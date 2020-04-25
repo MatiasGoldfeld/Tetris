@@ -30,6 +30,9 @@ let size = function
   | I -> 4
   | J | L | S | T | Z -> 3
 
+let max_size =
+  List.map size defaults
+  |> List.fold_left max 0
 
 let pi = 4. *. atan 1.
 
