@@ -15,8 +15,9 @@ type v =
 (** The representation of a Tetris gamestate. *)
 type t
 
-(** [init level] is the initialized state of the game starting at [level] *)
-val init : int -> t
+(** [init width height level] is the initialized state of the game with
+    playfield of size [width] by [height] starting at [level]. *)
+val init : int -> int -> int -> t
 
 (** [score state] is the score of [state]. *)
 val score : t -> int
@@ -44,9 +45,9 @@ val queue : t -> Tetromino.t list
     or [Empty] if there is none.*)
 val held : t -> Tetromino.t option
 
-(** [step state delta soft_drop] is the state of [state] after [delta] amount of
-    time. [soft_drop] indicates if soft drop is active. *)
-val step : t -> float -> bool -> t
+(** [update state delta soft_drop] is the state of [state] after [delta]
+    amount of time. [soft_drop] indicates if soft drop is active. *)
+val update : t -> float -> bool -> t
 
 (** [rotate state rotation] is [state] with an attempt to rotate the falling
     piece in [rotation]. *)
