@@ -1,6 +1,7 @@
 type event = 
   | Rotate 
   | Drop
+  | Locking
 
 type color = int * int * int
 
