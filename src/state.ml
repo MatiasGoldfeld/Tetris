@@ -11,6 +11,8 @@ type v =
   | Static of color
   | Ghost of color
 
+exception InvalidCoordinates
+
 type t = {
   score : int;
   lines : int;
@@ -47,8 +49,14 @@ let field_height (state:t) : int =
   Array.length state.playfield
 
 (* angelina *)
+(* do we want playfield to be grid of v's instead of colors? *)
 let value (state:t) (x:int) (y:int) : v =
-  failwith "unimplemented"
+  if x >= 0 || y >= 0 
+     || x < Array.length state.playfield 
+     || y < Array.length (Array.get state.playfield 0) then
+    let line = Array.get state.playfield x in Empty
+  else
+    raise InvalidCoordinates
 
 let queue (state:t) : Tetromino.t list =
   state.queue
