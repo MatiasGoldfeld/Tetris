@@ -1,4 +1,6 @@
 (* angelina *)
+open Sdl
+open Sdlmixer
 
 exception IllegalSound of string
 
@@ -10,8 +12,10 @@ type t = {
 let init (path:string) = 
   Sdlmixer.open_audio ();
   {
-    music = path^"/music/background.mp4";
-    sound_effects = [];
+    music = path^"/music/background.wav";
+    sound_effects = [
+      (Locking, path^"/music/selection.wav")
+    ];
   }
 
 let rec get_sound (e:State.event) = function
@@ -21,7 +25,8 @@ let rec get_sound (e:State.event) = function
 
 let play_sound (audio:t) (e:State.event)=
   let sound = get_sound e audio.sound_effects in
-  Sdlmixer.play_sound sound
+  let chunk = Sdlmixer.loadWAV sound in
+  Sdlmixer.play_sound chunk
 
 let adjust_music (audio:t) (volume:float) =
   if Sdlmixer.playing_music () then
