@@ -2,7 +2,7 @@
 let main () =
   Sdl.init [];
   Graphics.init ();
-  begin try Game.init 1 with
+  begin try Game.init 1; with
       Game.Quit -> print_endline "Game quit unexpectedly"
   end;
   Sdl.quit ()

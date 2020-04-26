@@ -172,9 +172,10 @@ let held (state:t) : Tetromino.t option =
 let step (state:t) : t =
   if is_not_conflict state state.falling state.falling_rot 
       (fst state.falling_pos, snd state.falling_pos + 1)
-  then {state with falling_pos = 
-                     (fst state.falling_pos, snd state.falling_pos + 1);
-                   since_last_step = 0}
+  then  begin
+    {state with falling_pos = 
+                  (fst state.falling_pos, snd state.falling_pos + 1);
+                since_last_step = 0} end
   else begin (for column = fst state.falling_pos to
                  (fst state.falling_pos + 
                   (Tetromino.size state.falling - 1)) do
