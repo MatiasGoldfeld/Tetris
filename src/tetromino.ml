@@ -74,10 +74,8 @@ let color t =
 
 let value t rot column row = 
   let s = size t in
-  if (column >= s || column < 0 || row >= s || row < 0) 
-  then failwith "Out of bounds error"
-  else
-    match t with
+  if (column >= s || column < 0 || row >= s || row < 0) then None
+  else match t with
     | O -> yellow
     | I -> find_coord_val rot column row i_default (size I) l_blue
     | L -> find_coord_val rot column row l_default (size L) d_blue
