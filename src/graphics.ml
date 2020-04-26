@@ -20,8 +20,8 @@ let draw_playfield (state:State.t) (size:int) : Sdlvideo.surface =
       (Sdlvideo.get_video_surface ()) [] width height in
 
   (* Draw every tile of every row and column *)
-  for row = 0 to rows do
-    for col = 0 to cols do
+  for row = 0 to (rows-1) do
+    for col = 0 to (cols-1) do
       let rect = Sdlvideo.rect (col * size) (row * size) size size in
       match State.value state col row with
       | State.Static color ->
