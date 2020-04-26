@@ -44,7 +44,7 @@ let add_to_queue q =
 (** [drop piece state] is the [state] with [piece] initialized as the falling
     piece on the top of the playfield. *)
 let drop (piece:Tetromino.t) (state:t) : t =
-  failwith "Unimplemented"
+  state (* failwith "Unimplemented" *)
 
 let init (width:int) (height:int) (level:int) : t =
   let first, queue =
