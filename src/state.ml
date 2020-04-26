@@ -270,17 +270,13 @@ let move (state:t) (direction:[`LEFT | `RIGHT]) : t =
 (* Oliver *)
 let hold (state:t) : t =
   match held state with
-  | None -> 
-    if List.length state.queue <= 7 
-    then drop (List.hd state.queue) 
-        {state with held_before = true; queue = add_to_queue 
-                                            (List.tl state.queue)}
-    else drop (List.hd state.queue) 
-        {state with held_before = true; queue = List.tl state.queue}
+  | None -> drop (List.hd state.queue) 
+              {state with held = Some state.falling;
+                          held_before = true; queue = List.tl state.queue}
   | Some p ->
     if state.held_before 
     then state
-    else drop p {state with held_before = true}
+    else drop p {state with held = Some state.falling; held_before = true}
 
 (* Oliver *)
 let hard_drop (state:t) : t =
