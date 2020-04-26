@@ -49,9 +49,10 @@ let init (level:int) (audio:Audio.t) =
     controls = KeyMap.empty
                |> KeyMap.add Sdlkey.KEY_LEFT (State.move `LEFT)
                |> KeyMap.add Sdlkey.KEY_RIGHT (State.move `RIGHT)
-               |> KeyMap.add Sdlkey.KEY_UP (State.rotate `CW)
-               |> KeyMap.add Sdlkey.KEY_z (State.rotate `CCW)
-               |> KeyMap.add Sdlkey.KEY_x (State.rotate `CW)
+               (* TODO: We need to fix CW CCW mixup *)
+               |> KeyMap.add Sdlkey.KEY_UP (State.rotate `CCW)
+               |> KeyMap.add Sdlkey.KEY_z (State.rotate `CW)
+               |> KeyMap.add Sdlkey.KEY_x (State.rotate `CCW)
                |> KeyMap.add Sdlkey.KEY_c (State.hold)
                |> KeyMap.add Sdlkey.KEY_SPACE (State.hard_drop);
     audio = audio
