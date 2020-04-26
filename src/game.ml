@@ -6,6 +6,7 @@ type t = {
   state : State.t;
   last_update : int;
   controls : (State.t -> State.t) KeyMap.t;
+  audio: (Audio.t)
 }
 
 let handle_events (init_game:t) : t =
@@ -39,8 +40,9 @@ let rec loop (game:t) : unit =
       game
   in loop game
 
-let init (level:int) =
+let init (level:int) (audio:Audio.t) =
   Random.self_init ();
+  Audio.start_music audio;
   loop {
     state = (State.init 10 20 level);
     last_update = (Sdltimer.get_ticks ());
@@ -52,5 +54,5 @@ let init (level:int) =
                |> KeyMap.add Sdlkey.KEY_x (State.rotate `CW)
                |> KeyMap.add Sdlkey.KEY_c (State.hold)
                |> KeyMap.add Sdlkey.KEY_SPACE (State.hard_drop);
-
+    audio = audio
   }
