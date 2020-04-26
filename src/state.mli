@@ -35,8 +35,8 @@ val field_width : t -> int
 (** [field_height state] is the height of the [state]'s playfield. *)
 val field_height : t -> int
 
-(** [value state r c] is the [v] of [state's] playfield at 
-    coordinates [(r, c)] *)
+(** [value state c r] is the [v] of [state's] playfield at 
+    coordinates [(c, r)] *)
 val value : t -> int -> int -> v
 
 (** [queue state] is the queue of tetrominos to be used next in the game. *)
@@ -47,16 +47,17 @@ val queue : t -> Tetromino.t list
 val held : t -> Tetromino.t option
 
 (** [update state delta soft_drop] is the state of [state] after [delta]
-    amount of time. [soft_drop] indicates if soft drop is active. *)
-val update : t -> float -> bool -> t
+    amount of time in milliseconds. [soft_drop] indicates if soft drop is
+    active. *)
+val update : t -> int -> bool -> t
 
-(** [rotate state rotation] is [state] with an attempt to rotate the falling
+(** [rotate rotation state] is [state] with an attempt to rotate the falling
     piece in [rotation]. *)
-val rotate : t -> [`CCW | `CW] -> t
+val rotate : [`CCW | `CW] -> t -> t
 
-(** [move state direction] is [state] with an attempt to move the falling
+(** [move direction state] is [state] with an attempt to move the falling
     piece in [direction]. *)
-val move : t -> [`LEFT | `RIGHT] -> t
+val move : [`LEFT | `RIGHT] -> t -> t
 
 (** [hold state] is the state of the game after attempting to hold a piece. *)
 val hold : t -> t
@@ -65,6 +66,6 @@ val hold : t -> t
     at the base level. *)
 val hard_drop : t -> t
 
-(** [handle_events state f] is the state after applying [f] to each event in the
+(** [handle_events f state] is the state after applying [f] to each event in the
     queue of events in [state] *)
-val handle_events : t -> (event -> unit) -> t
+val handle_events : (event -> unit) -> t -> t

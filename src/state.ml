@@ -160,7 +160,7 @@ let step (state:t) : t =
   failwith "unimplemented"
 
 (* Matias *)
-let update (state:t) (delta:float) (soft_drop:bool) : t =
+let update (state:t) (delta:int) (soft_drop:bool) : t =
   failwith("unimplemented")
 
 
@@ -192,7 +192,7 @@ let rec test_rot state attempted_rot list =
 
 
 (* Oliver *)
-let rotate (state:t) (rotation:[`CCW | `CW]) : t =
+let rotate (rotation:[`CCW | `CW]) (state:t) : t =
   let size = Tetromino.size state.falling in
   let rot = state.falling_rot in
   if size = 2 
@@ -228,7 +228,7 @@ let rotate (state:t) (rotation:[`CCW | `CW]) : t =
 
 
 (* Oliver *)
-let move (state:t) (direction:[`LEFT | `RIGHT]) : t =
+let move (direction:[`LEFT | `RIGHT]) (state:t) : t =
   match direction with
   | `LEFT -> if is_not_conflict state (state.falling) state.falling_rot 
       (fst state.falling_pos - 1,
@@ -281,6 +281,6 @@ let hard_drop (state:t) : t =
   | None -> state
 
 
-let handle_events (state:t) (f:event -> unit) : t =
+let handle_events (f:event -> unit) (state:t) : t =
   List.iter f (List.rev state.events);
   {state with events=[]}
