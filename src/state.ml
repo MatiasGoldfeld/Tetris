@@ -5,6 +5,8 @@ type event =
 
 type color = int * int * int
 
+exception InvalidCoordinates 
+
 type v =
   | Empty
   | Falling of color
@@ -81,37 +83,6 @@ let field_width (state:t) : int =
 let field_height (state:t) : int =
   Array.length state.playfield
 
-<<<<<<< HEAD
-let empty_or_ghost (state:t) (r:int) (c:int) =  
-  let (falling_r, falling_c) = state.falling_pos in
-  let rot = state.falling_rot in
-  let tet = state.falling in
-  if abs (c - falling_c) <= Tetromino.size tet then
-    match Tetromino.value tet rot falling_c falling_r with
-    | None -> Empty
-    | Some color ->  begin
-        for possible_r = 0 to Tetromino.size tet do
-          Empty
-      end
-  else
-    Empty
-
-
-let elem (state:t) (r:int) (c:int) =
-  match state.playfield.(r).(c) with
-  | None -> empty_or_ghost state r c
-  | Some color when 
-      r < (field_height state) - state.level - Tetromino.size state.falling
-    -> Falling color
-  | Some color -> Static color
-
-(* angelina *)
-let value (state:t) (r:int) (c:int) : v =
-  if r >= 0 && c >= 0 && r < field_height state && c < field_width state then 
-    (elem state r c)
-  else
-    raise InvalidCoordinates
-=======
 (** [check_rows state falling falling_rot falling_pos column row size] 
     is true if the anticipated movement [falling] [falling_rot] [falling_pos] is 
     allowed for a specific row. False otherwise.*)
@@ -146,13 +117,29 @@ let is_conflict state falling falling_rot falling_pos =
   check_columns state falling falling_rot falling_pos 0 0 size
 
 
+let empty_or_ghost (state:t) (r:int) (c:int) =
+  let pos = state.falling_pos in
+  let tet = state.falling in
+  let rot = state.falling_rot in
+  if is_conflict state tet rot pos then Empty
+  else match (Tetromino.color tet) with
+    | Some color -> Ghost color
+    | None -> Empty
 
+let elem (state:t) (r:int) (c:int) =
+  match state.playfield.(r).(c) with
+  | None -> empty_or_ghost state r c
+  | Some color when 
+      r < (field_height state) - state.level - Tetromino.size state.falling
+    -> Falling color
+  | Some color -> Static color
 
-
-
-let value (state:t) (x:int) (y:int) : v =
-  failwith "unimplemented"
->>>>>>> 26648a5777f1206b36b5c7879a54f76b671751bc
+(* angelina *)
+let value (state:t) (r:int) (c:int) : v =
+  if r >= 0 && c >= 0 && r < field_height state && c < field_width state then 
+    (elem state r c)
+  else
+    raise InvalidCoordinates
 
 let queue (state:t) : Tetromino.t list =
   state.queue

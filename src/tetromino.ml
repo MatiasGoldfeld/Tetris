@@ -59,7 +59,15 @@ let find_coord_val rot x y piece_list size color =
               |> Float.to_int in
   if iterator new_x new_y piece_list = 1 then color else None
 
-
+let color t =
+  match t with 
+  | O -> yellow
+  | I -> l_blue
+  | L -> d_blue
+  | J -> orange
+  | S -> green
+  | T -> purple
+  | Z -> red
 
 (* the largest dimension. make tetrominos as big as bounding box *)
 let size =
