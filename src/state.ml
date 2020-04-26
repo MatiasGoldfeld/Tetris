@@ -83,7 +83,6 @@ let field_width (state:t) : int =
 let field_height (state:t) : int =
   Array.length state.playfield
 
-<<<<<<< HEAD
 (** [check_rows state falling falling_rot falling_pos column row size] 
     is true if the anticipated movement [falling] [falling_rot] [falling_pos] is 
     allowed for a specific row. False otherwise.*)
@@ -117,22 +116,18 @@ let is_conflict state falling falling_rot falling_pos =
   let size = Tetromino.size state.falling in
   check_columns state falling falling_rot falling_pos 0 0 size
 
-
-let empty_or_ghost (state:t) (r:int) (c:int) =
-  let pos = state.falling_pos in
-  let tet = state.falling in
-  let rot = state.falling_rot in
-  if is_conflict state tet rot pos then Empty
-  else match (Tetromino.color tet) with
-    | Some color -> Ghost color
-    | None -> Empty
-
 let elem (state:t) (r:int) (c:int) =
   match state.playfield.(r).(c) with
-  | None -> empty_or_ghost state r c
-  | Some color when 
-      r < (field_height state) - state.level - Tetromino.size state.falling
-    -> Falling color
+  | None -> begin
+      let (falling_r, falling_c) = state.falling_pos in
+      let falling_rot = state.falling_rot in
+      if c - falling_c <= Tetromino.size state.falling then
+        match Tetromino.value state.falling falling_rot c falling_r with
+        | Some color -> Falling color
+        | None -> Empty
+      else
+        Empty
+    end
   | Some color -> Static color
 
 (* angelina *)
@@ -141,11 +136,6 @@ let value (state:t) (r:int) (c:int) : v =
     (elem state r c)
   else
     raise InvalidCoordinates
-=======
-let value (state:t) (x:int) (y:int) : v =
-  if Random.bool () then Static (255, 100, 100) else Empty
-(* failwith "unimplemented" *)
->>>>>>> 07edeae0bd71e35d142c4bc5a408bc94ce847b87
 
 let queue (state:t) : Tetromino.t list =
   state.queue
