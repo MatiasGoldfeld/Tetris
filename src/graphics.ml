@@ -8,6 +8,7 @@ let draw_tetromino (piece:Tetromino.t) (rot:int) (surf:Sdlvideo.surface)
     (x:int) (y:int) (size:int) : unit =
   ()
 
+
 (** [draw_playfield state size] is the rendered playfield of [state] with a 
     tile length of [size]. *)
 let draw_playfield (state:State.t) (size:int) : Sdlvideo.surface =
@@ -60,8 +61,8 @@ let draw_queue (state:State.t) (size:int) (n:int) : Sdlvideo.surface =
 let render (state:State.t) : unit =
   let screen = Sdlvideo.get_video_surface () in
   let playfield = draw_playfield state 50 in
-  let queue = draw_queue state 50 7 in
+  (* let queue = draw_queue state 50 7 in *)
   Sdlvideo.blit_surface playfield screen ();
-  Sdlvideo.blit_surface ~src:queue ~dst:screen
-    ~dst_rect:(Sdlvideo.rect (Sdlvideo.surface_info playfield).w 0 0 0) ();
+  (* Sdlvideo.blit_surface ~src:queue ~dst:screen
+     ~dst_rect:(Sdlvideo.rect (Sdlvideo.surface_info playfield).w 0 0 0) (); *)
   Sdlvideo.flip screen;

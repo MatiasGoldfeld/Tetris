@@ -3,9 +3,9 @@
 let main () =
   Sdl.init [];
   Graphics.init ();
-  let state = State.init 10 20 1 in
-  Graphics.render state;
-  Sdltimer.delay(10000);
+  begin try Game.init 1 with
+      Game.Quit -> print_endline "Game quit unexpectedly"
+  end;
   Sdl.quit ()
 
 let () = main ()
