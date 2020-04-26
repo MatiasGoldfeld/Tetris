@@ -10,6 +10,7 @@ type t = {
 }
 
 let init (path:string) = 
+  Sdl.init_subsystem([`AUDIO]);
   Sdlmixer.open_audio ();
   {
     music = path^"/music/background.wav";

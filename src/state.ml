@@ -5,7 +5,7 @@ type event =
 
 type color = int * int * int
 
-exception InvalidCoordinates 
+exception InvalidCoordinates of string
 
 type v =
   | Empty
@@ -157,7 +157,7 @@ let value (state:t) (c:int) (r:int) : v =
   if r >= 0 && c >= 0 && r < field_height state && c < field_width state then 
     (elem state c r)
   else
-    raise InvalidCoordinates
+    raise (InvalidCoordinates ((string_of_int c) ^", " ^ (string_of_int r)))
 
 let queue (state:t) : Tetromino.t list =
   state.queue
