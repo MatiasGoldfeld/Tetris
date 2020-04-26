@@ -72,10 +72,6 @@ let color t =
   | T -> purple
   | Z -> red
 
-(* the largest dimension. make tetrominos as big as bounding box *)
-let size =
-  failwith "unimplemented"
-
 let value t rot column row = 
   let s = size t in
   if (column >= s || column < 0 || row >= s || row < 0) 
