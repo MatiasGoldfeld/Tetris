@@ -17,6 +17,7 @@ type t = {
   score : int;
   lines : int;
   level : int;
+  since_last_step : float;
   events : event list;
   queue : Tetromino.t list;
   held : Tetromino.t option;
@@ -59,6 +60,7 @@ let init (width:int) (height:int) (level:int) : t =
     score = 0;
     lines = 0;
     level = level;
+    since_last_step = 0.0;
     events = [];
     queue = queue;
     held = None;
@@ -171,13 +173,14 @@ let step (state:t) : t =
   if is_not_conflict state state.falling state.falling_rot 
       (fst state.falling_pos, snd state.falling_pos + 1)
   then {state with falling_pos = 
-                     (fst state.falling_pos, snd state.falling_pos + 1)}
+                     (fst state.falling_pos, snd state.falling_pos + 1);
+                   since_last_step = 0.0}
   else begin (for column = fst state.falling_pos to
                  (fst state.falling_pos + 
-                  (Tetromino.size state.falling)) do
+                  (Tetromino.size state.falling - 1)) do
                 for row = fst state.falling_pos to
                     (snd state.falling_pos + 
-                     (Tetromino.size state.falling)) do
+                     (Tetromino.size state.falling - 1)) do
                   let new_val = Tetromino.value state.falling 
                       state.falling_rot column row in
                   if new_val <> None
@@ -186,12 +189,17 @@ let step (state:t) : t =
                 done
               done);
     drop (List.hd state.queue) 
-      {state with held_before = false; queue = List.tl state.queue}
+      {state with held_before = false; queue = List.tl state.queue; 
+                  since_last_step = 0.0}
   end
 
 (* Matias *)
 let update (state:t) (delta:float) (soft_drop:bool) : t =
-  failwith("unimplemented")
+  let adjust = if soft_drop then 0.5 else 1. in
+  if state.since_last_step >= ((500. -. Float.of_int state.level -. 
+                                (Float.of_int state.level -. 1.) *. 20.)) *. adjust 
+  then step state
+  else {state with since_last_step = state.since_last_step +. delta}
 
 
 let cw013 = [(0,0);(-1,0);(-1,1);(0,-2);(-1,-2)]
@@ -290,10 +298,10 @@ let hard_drop (state:t) : t =
   with
   | Some (column, row) -> (for column = fst state.falling_pos to
                               (fst state.falling_pos + 
-                               (Tetromino.size state.falling)) do
+                               (Tetromino.size state.falling - 1)) do
                              for row = fst state.falling_pos to
                                  (snd state.falling_pos + 
-                                  (Tetromino.size state.falling)) do
+                                  (Tetromino.size state.falling - 1)) do
                                let new_val = Tetromino.value state.falling 
                                    state.falling_rot column row in
                                if new_val <> None
