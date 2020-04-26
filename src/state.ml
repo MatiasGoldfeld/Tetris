@@ -36,7 +36,7 @@ let shuffle (lst:'a list) : 'a list =
 (** [drop piece state] is the [state] with [piece] initialized as the falling
     piece on the top of the playfield. *)
 let drop (piece:Tetromino.t) (state:t) : t =
-  failwith "Unimplemented"
+  state (* failwith "Unimplemented" *)
 
 let init (width:int) (height:int) (level:int) : t =
   let first, queue =
@@ -72,7 +72,8 @@ let field_height (state:t) : int =
   Array.length state.playfield
 
 let value (state:t) (x:int) (y:int) : v =
-  failwith "unimplemented"
+  if Random.bool () then Static (255, 100, 100) else Empty
+(* failwith "unimplemented" *)
 
 let queue (state:t) : Tetromino.t list =
   state.queue
