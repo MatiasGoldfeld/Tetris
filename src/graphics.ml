@@ -25,9 +25,9 @@ let draw_playfield (state:State.t) (size:int) : Sdlvideo.surface =
     for col = 0 to (cols-1) do
       let rect = Sdlvideo.rect (col * size) (row * size) size size in
       match State.value state col row with
-      | State.Static color ->
+      | State.Static color | State.Falling color->
         Sdlvideo.fill_rect ~rect:rect surf (Sdlvideo.map_RGB surf color);
-      | State.Falling _ | State.Ghost _ | State.Empty -> ()
+      | State.Ghost _ | State.Empty -> ()
     done
   done;
 
@@ -35,8 +35,6 @@ let draw_playfield (state:State.t) (size:int) : Sdlvideo.surface =
   let border = 2 in
   let border_color = Sdlvideo.map_RGB surf (200, 200, 200) in
   for row = 0 to rows + 1 do
-    print_int (row * size);
-    print_newline ();
     let rect = Sdlvideo.rect 0 (row * size - border) width (2 * border) in
     Sdlvideo.fill_rect ~rect:rect surf border_color
   done;
