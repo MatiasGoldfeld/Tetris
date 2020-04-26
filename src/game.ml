@@ -42,7 +42,6 @@ let rec loop (game:t) : unit =
 
 let init (level:int) (audio:Audio.t) =
   Random.self_init ();
-  Audio.start_music audio;
   loop {
     state = (State.init 10 20 level);
     last_update = (Sdltimer.get_ticks ());
