@@ -48,7 +48,7 @@ let drop (piece:Tetromino.t) (state:t) : t = {
   state with
   falling = piece;
   falling_rot = 0;
-  falling_pos = (4, -1);
+  falling_pos = (4, 0);
   queue =
     if List.length state.queue < (List.length Tetromino.defaults) then
       add_to_queue state.queue
@@ -97,10 +97,11 @@ let field_height (state:t) : int =
 let rec check_rows state falling falling_rot falling_pos column row size =
   match Tetromino.value falling falling_rot column row with
   | Some x when column < size -> 
-    if (column < 0 || column >= field_width state||
-        row <= field_height state ||
-        (state.playfield.(fst falling_pos + column).(snd falling_pos + row)) 
-        <> None) 
+    let abs_col = fst falling_pos + column in
+    let abs_row = snd falling_pos + row in
+    if (abs_row >= field_height state ||
+        abs_col < 0 || abs_col >= field_width state ||
+        state.playfield.(abs_row).(abs_col) <> None)
     then false
     else check_rows state falling falling_rot falling_pos (column + 1) row size
   | None when column < size -> check_rows state falling falling_rot falling_pos 
@@ -184,7 +185,7 @@ let step (state:t) : t =
          let new_val = Tetromino.value state.falling 
              state.falling_rot column row in
          if new_val <> None
-         then state.playfield.(column).(row) <- new_val
+         then state.playfield.(row).(column) <- new_val
          else ()
        done
      done);
@@ -306,7 +307,7 @@ let hard_drop (state:t) : t =
                                let new_val = Tetromino.value state.falling 
                                    state.falling_rot column row in
                                if new_val <> None
-                               then state.playfield.(column).(row) <- new_val
+                               then state.playfield.(row).(column) <- new_val
                                else ()
                              done
                            done);
