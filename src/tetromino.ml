@@ -16,7 +16,6 @@ let green = Some (0,128,0)
 let purple = Some (128,0,128)
 let red = Some (255,0,0)
 
-
 type tetromino = 
     I | J | L | O | S | T | Z
 
@@ -74,10 +73,8 @@ let color t =
 
 let value t rot column row = 
   let s = size t in
-  if (column >= s || column < 0 || row >= s || row < 0) then begin
-    print_endline "hello there";
+  if (column >= s || column < 0 || row >= s || row < 0) then
     None
-  end
   else match t with
     | O -> yellow
     | I -> find_coord_val rot column row i_default (size I) l_blue

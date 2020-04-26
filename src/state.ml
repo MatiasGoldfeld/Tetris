@@ -17,7 +17,7 @@ type t = {
   score : int;
   lines : int;
   level : int;
-  since_last_step : int;
+  step_delta : int;
   events : event list;
   queue : Tetromino.t list;
   held : Tetromino.t option;
@@ -44,12 +44,17 @@ let add_to_queue q =
 
 (** [drop piece state] is the [state] with [piece] initialized as the falling
     piece on the top of the playfield. *)
-let drop (piece:Tetromino.t) (state:t) : t =
-  let new_queue = if List.length state.queue < 7 
-    then add_to_queue state.queue
-    else state.queue in
-  {state with falling = piece; falling_rot = 0; falling_pos = (4, -1); 
-              queue = new_queue}
+let drop (piece:Tetromino.t) (state:t) : t = {
+  state with
+  falling = piece;
+  falling_rot = 0;
+  falling_pos = (4, -1);
+  queue =
+    if List.length state.queue < (List.length Tetromino.defaults) then
+      add_to_queue state.queue
+    else
+      state.queue
+}
 
 let init (width:int) (height:int) (level:int) : t =
   let first, queue =
@@ -60,7 +65,7 @@ let init (width:int) (height:int) (level:int) : t =
     score = 0;
     lines = 0;
     level = level;
-    since_last_step = 0;
+    step_delta = 0;
     events = [];
     queue = queue;
     held = None;
@@ -70,9 +75,6 @@ let init (width:int) (height:int) (level:int) : t =
     falling_pos = 0, 0;
     playfield = Array.make_matrix height width None
   }
-
-
-
 
 let score (state:t) : int =
   state.score
@@ -95,9 +97,9 @@ let field_height (state:t) : int =
 let rec check_rows state falling falling_rot falling_pos column row size =
   match Tetromino.value falling falling_rot column row with
   | Some x when column < size -> 
-    if (column < 0 || column >= field_width state||
-        row <= field_height state ||
-        (state.playfield.(fst falling_pos + column).(snd falling_pos + row)) 
+    if (column < 0 || (column+ fst falling_pos) >= field_width state||
+        row+(snd falling_pos) >= field_height state ||
+        (state.playfield.(snd falling_pos + row).(fst falling_pos + column)) 
         <> None) 
     then false
     else check_rows state falling falling_rot falling_pos (column + 1) row size
@@ -116,7 +118,6 @@ let rec check_columns state falling falling_rot falling_pos column row size =
            (row+1) size))
   else true
 
-
 (** [is_not_conflict state falling falling_rot falling_pos] is true if
     the anticipated movement [falling] [falling_rot] [falling_pos] is allowed.
     False otherwise. *)
@@ -128,7 +129,6 @@ let rec shadow_coordinates state column row =
   if is_not_conflict state state.falling state.falling_rot (column, row) 
   then shadow_coordinates state column (row + 1)
   else Some (column, row-1)
-
 
 let shadow_or_ghost (state:t) (c:int) (r:int) =
   match shadow_coordinates state c r with
@@ -168,39 +168,41 @@ let held (state:t) : Tetromino.t option =
   state.held
 
 (** [step state] is the [state] after the falling piece has stepped down. *)
-(** [step state] is the [state] after the falling piece has stepped down. *)
 let step (state:t) : t =
   if is_not_conflict state state.falling state.falling_rot 
       (fst state.falling_pos, snd state.falling_pos + 1)
-  then  begin
-    {state with falling_pos = 
-                  (fst state.falling_pos, snd state.falling_pos + 1);
-                since_last_step = 0} end
-  else begin (for column = fst state.falling_pos to
-                 (fst state.falling_pos + 
-                  (Tetromino.size state.falling - 1)) do
-                for row = fst state.falling_pos to
-                    (snd state.falling_pos + 
-                     (Tetromino.size state.falling - 1)) do
-                  let new_val = Tetromino.value state.falling 
-                      state.falling_rot column row in
-                  if new_val <> None
-                  then state.playfield.(column).(row) <- new_val
-                  else ()
-                done
-              done);
+  then {state with falling_pos = 
+                     (fst state.falling_pos, snd state.falling_pos + 1);
+                   step_delta = 0}
+  else begin
+    (for column = fst state.falling_pos to
+        (fst state.falling_pos + 
+         (Tetromino.size state.falling - 1)) do
+       for row = fst state.falling_pos to
+           (snd state.falling_pos + 
+            (Tetromino.size state.falling - 1)) do 
+         let new_val = Tetromino.value state.falling 
+             state.falling_rot 
+             (column-(fst state.falling_pos)) 
+             (row-(snd state.falling_pos)) in
+         if new_val <> None
+         then state.playfield.(row).(column) <- new_val
+         else ()
+       done
+     done);
     drop (List.hd state.queue) 
-      {state with held_before = false; queue = List.tl state.queue; 
-                  since_last_step = 0}
+      {state with held_before = false;
+                  queue = List.tl state.queue; 
+                  step_delta = 0}
   end
 
 (* Matias *)
 let update (state:t) (delta:int) (soft_drop:bool) : t =
-  let adjust = if soft_drop then 500 else 1000 in
-  if state.since_last_step >= ((500 -  state.level - 
-                                (state.level - 1) * 20)) * adjust 
+  (* let adjust = if soft_drop then 500 else 1000 in *)
+  if state.step_delta >= 500
+  (* ((500 -  state.level - state.level - 1) * 20)) * adjust  *)
   then step state
-  else {state with since_last_step = state.since_last_step + delta}
+  else {state with step_delta = state.step_delta + delta}
 
 
 let cw013 = [(0,0);(-1,0);(-1,1);(0,-2);(-1,-2)]
@@ -306,7 +308,7 @@ let hard_drop (state:t) : t =
                                let new_val = Tetromino.value state.falling 
                                    state.falling_rot column row in
                                if new_val <> None
-                               then state.playfield.(column).(row) <- new_val
+                               then state.playfield.(row).(column) <- new_val
                                else ()
                              done
                            done);
