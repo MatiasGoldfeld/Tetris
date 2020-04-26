@@ -7,7 +7,10 @@ val init : string -> t
 (** [play_sound audio e] plays the sound triggered by [e] using [audio]. *)
 val play_sound : t -> State.event -> unit
 
-(* val adjust_music : t ->  *)
+(** [adjust_music audio volume] sets the music volume to [volume].
+    [volume] ranges between 0 and 128 (MIX_MAX_VOLUME). If [volume] exceeds 
+    MIX_MAX_VOLUME, music volume is set to MIX_MAX_VOLUME. *)
+val adjust_music: t -> float -> unit
 
 (** [start_music audio] plays the designated music file of [audio]. *)
 val start_music : t -> unit
