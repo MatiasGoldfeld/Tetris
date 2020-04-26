@@ -47,25 +47,31 @@ let rec iterator x y piece_list : int =
     point according to a certain rotation of the 2d list. *)
 let find_coord_val rot x y piece_list size color = 
   let change = (Float.of_int (size-1)) /. 2. in
-  let new_x = ((((Float.of_int x) -. change) *. (cos (pi /. 2. *. Float.of_int rot)) 
-                -. ((Float.of_int y) -. change) *. (sin (pi /. 2. *. Float.of_int rot)) +. change) +. 0.5) |> Float.to_int in
-  let new_y = ((((Float.of_int y) -. change) *. (cos (pi /. 2. *. Float.of_int rot)) 
-                +. ((Float.of_int x) -. change) *. (sin (pi /. 2. *. Float.of_int rot)) +. change) +. 0.5) |> Float.to_int in
+  let new_x = ((((Float.of_int x) -. change) *. 
+                (cos (pi /. 2. *. Float.of_int rot)) 
+                -. ((Float.of_int y) -. change) *. 
+                   (sin (pi /. 2. *. Float.of_int rot)) +. change) +. 0.5) 
+              |> Float.to_int in
+  let new_y = ((((Float.of_int y) -. change) *. 
+                (cos (pi /. 2. *. Float.of_int rot)) 
+                +. ((Float.of_int x) -. change) *. 
+                   (sin (pi /. 2. *. Float.of_int rot)) +. change) +. 0.5) 
+              |> Float.to_int in
   if iterator new_x new_y piece_list = 1 then color else None
 
 
 
 
-let value t rot x y = 
+let value t rot column row = 
   let s = size t in
-  if (x >= s || x < 0 || y >= s || y < 0) 
+  if (column >= s || column < 0 || row >= s || row < 0) 
   then failwith "Out of bounds error"
   else
     match t with
     | O -> yellow
-    | I -> find_coord_val rot x y i_default (size I) l_blue
-    | L -> find_coord_val rot x y l_default (size L) d_blue
-    | J -> find_coord_val rot x y j_default (size J) orange
-    | S -> find_coord_val rot x y s_default (size S) green
-    | T -> find_coord_val rot x y t_default (size T) purple
-    | Z -> find_coord_val rot x y z_default (size Z) red
+    | I -> find_coord_val rot column row i_default (size I) l_blue
+    | L -> find_coord_val rot column row l_default (size L) d_blue
+    | J -> find_coord_val rot column row j_default (size J) orange
+    | S -> find_coord_val rot column row s_default (size S) green
+    | T -> find_coord_val rot column row t_default (size T) purple
+    | Z -> find_coord_val rot column row z_default (size Z) red
