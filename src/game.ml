@@ -53,7 +53,7 @@ let init (level:int) (audio:Audio.t) =
                |> KeyMap.add Sdlkey.KEY_UP (State.rotate `CCW)
                |> KeyMap.add Sdlkey.KEY_z (State.rotate `CW)
                |> KeyMap.add Sdlkey.KEY_x (State.rotate `CCW)
-               |> KeyMap.add Sdlkey.KEY_c (State.hold)
-               |> KeyMap.add Sdlkey.KEY_SPACE (State.hard_drop);
+               |> KeyMap.add Sdlkey.KEY_c (State.hold);
+    (* |> KeyMap.add Sdlkey.KEY_SPACE (State.hard_drop); *)
     audio = audio
   }
