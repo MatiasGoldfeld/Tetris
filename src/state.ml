@@ -119,13 +119,10 @@ let is_not_conflict state falling falling_rot falling_pos =
   check_columns state falling falling_rot falling_pos 0 0 size
 
 
-
-let rec shadow_coordinates state column row=
-  if row >= -2 then 
-    if is_not_conflict state state.falling state.falling_rot (column, row) 
-    then Some (column, row)
-    else shadow_coordinates state column (row - 1)
-  else None
+let rec shadow_coordinates state column row =
+  if is_not_conflict state state.falling state.falling_rot (column, row) 
+  then shadow_coordinates state column (row + 1)
+  else Some (column, row-1)
 
 let empty_or_ghost (state:t) (r:int) (c:int) =
   let pos = state.falling_pos in
