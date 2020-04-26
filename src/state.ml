@@ -260,7 +260,7 @@ let hold (state:t) : t =
 
 (* Oliver *)
 let hard_drop (state:t) : t =
-  match shadow_coordinates state (fst state.falling_pos) (field_height state) 
+  match shadow_coordinates state (fst state.falling_pos) (snd state.falling_pos) 
   with
   | Some (column, row) -> (for column = fst state.falling_pos to
                               (fst state.falling_pos + 
