@@ -8,13 +8,13 @@ let s_default = [[0;1;1];[1;1;0];[0;0;0]]
 let t_default = [[0;1;0];[1;1;1];[0;0;0]]
 let z_default = [[1;1;0];[0;1;1];[0;0;0]]
 
-let l_blue = Some (0,0,0)
-let d_blue = Some (0,0,0)
-let orange = Some (0,0,0)
-let yellow = Some (0,0,0)
-let green = Some (0,0,0)
-let purple = Some (0,0,0)
-let red = Some (0,0,0)
+let l_blue = Some (0,255,255)
+let d_blue = Some (0,0,255)
+let orange = Some (255,165,0)
+let yellow = Some (255,255,0)
+let green = Some (0,128,0)
+let purple = Some (128,0,128)
+let red = Some (255,0,0)
 
 
 type tetromino = 
@@ -74,7 +74,10 @@ let color t =
 
 let value t rot column row = 
   let s = size t in
-  if (column >= s || column < 0 || row >= s || row < 0) then None
+  if (column >= s || column < 0 || row >= s || row < 0) then begin
+    print_endline "hello there";
+    None
+  end
   else match t with
     | O -> yellow
     | I -> find_coord_val rot column row i_default (size I) l_blue
