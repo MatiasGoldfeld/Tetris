@@ -1,8 +1,11 @@
 type event = 
   | Rotate 
   | Drop
+  | Locking
 
 type color = int * int * int
+
+exception InvalidCoordinates 
 
 type v =
   | Empty
@@ -116,6 +119,7 @@ let is_not_conflict state falling falling_rot falling_pos =
   check_columns state falling falling_rot falling_pos 0 0 size
 
 
+
 let rec shadow_coordinates state column row=
   if row >= -2 then 
     if is_not_conflict state state.falling state.falling_rot (column, row) 
@@ -123,14 +127,36 @@ let rec shadow_coordinates state column row=
     else shadow_coordinates state column (row - 1)
   else None
 
-let value (state:t) (x:int) (y:int) : v =
-  failwith "unimplemented"
+let empty_or_ghost (state:t) (r:int) (c:int) =
+  let pos = state.falling_pos in
+  let tet = state.falling in
+  let rot = state.falling_rot in
+  if is_not_conflict state tet rot pos then Empty
+  else match (Tetromino.color tet) with
+    | Some color -> Ghost color
+    | None -> Empty
+
+let elem (state:t) (r:int) (c:int) =
+  match state.playfield.(r).(c) with
+  | None -> empty_or_ghost state r c
+  | Some color when 
+      r < (field_height state) - state.level - Tetromino.size state.falling
+    -> Falling color
+  | Some color -> Static color
+
+(* angelina *)
+let value (state:t) (r:int) (c:int) : v =
+  if r >= 0 && c >= 0 && r < field_height state && c < field_width state then 
+    (elem state r c)
+  else
+    raise InvalidCoordinates
 
 let queue (state:t) : Tetromino.t list =
   state.queue
 
 let held (state:t) : Tetromino.t option =
   state.held
+
 
 (** [step state] is the [state] after the falling piece has stepped down. *)
 let step (state:t) : t =
