@@ -47,10 +47,16 @@ let rec iterator x y piece_list : int =
     point according to a certain rotation of the 2d list. *)
 let find_coord_val rot x y piece_list size color = 
   let change = (Float.of_int (size-1)) /. 2. in
-  let new_x = ((((Float.of_int x) -. change) *. (cos (pi /. 2. *. Float.of_int rot)) 
-                -. ((Float.of_int y) -. change) *. (sin (pi /. 2. *. Float.of_int rot)) +. change) +. 0.5) |> Float.to_int in
-  let new_y = ((((Float.of_int y) -. change) *. (cos (pi /. 2. *. Float.of_int rot)) 
-                +. ((Float.of_int x) -. change) *. (sin (pi /. 2. *. Float.of_int rot)) +. change) +. 0.5) |> Float.to_int in
+  let new_x = ((((Float.of_int x) -. change) *. 
+                (cos (pi /. 2. *. Float.of_int rot)) 
+                -. ((Float.of_int y) -. change) *. 
+                   (sin (pi /. 2. *. Float.of_int rot)) +. change) +. 0.5) 
+              |> Float.to_int in
+  let new_y = ((((Float.of_int y) -. change) *. 
+                (cos (pi /. 2. *. Float.of_int rot)) 
+                +. ((Float.of_int x) -. change) *. 
+                   (sin (pi /. 2. *. Float.of_int rot)) +. change) +. 0.5) 
+              |> Float.to_int in
   if iterator new_x new_y piece_list = 1 then color else None
 
 
