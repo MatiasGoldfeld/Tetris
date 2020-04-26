@@ -1,5 +1,4 @@
 (** Temporary main for testing purposes *)
-
 let main () =
   Sdl.init [];
   Graphics.init ();
