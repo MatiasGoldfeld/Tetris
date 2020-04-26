@@ -48,7 +48,7 @@ let drop (piece:Tetromino.t) (state:t) : t = {
   state with
   falling = piece;
   falling_rot = 0;
-  falling_pos = (4, -1);
+  falling_pos = (4, 0);
   queue =
     if List.length state.queue < (List.length Tetromino.defaults) then
       add_to_queue state.queue
@@ -97,10 +97,11 @@ let field_height (state:t) : int =
 let rec check_rows state falling falling_rot falling_pos column row size =
   match Tetromino.value falling falling_rot column row with
   | Some x when column < size -> 
-    if (column < 0 || (column+ fst falling_pos) >= field_width state||
-        row+(snd falling_pos) >= field_height state ||
-        (state.playfield.(snd falling_pos + row).(fst falling_pos + column)) 
-        <> None) 
+    let abs_col = fst falling_pos + column in
+    let abs_row = snd falling_pos + row in
+    if (abs_row >= field_height state ||
+        abs_col < 0 || abs_col >= field_width state ||
+        state.playfield.(abs_row).(abs_col) <> None)
     then false
     else check_rows state falling falling_rot falling_pos (column + 1) row size
   | None when column < size -> check_rows state falling falling_rot falling_pos 
@@ -227,8 +228,11 @@ let ccw034 = [(0,0);(-1,0);(2,0);(-1,2);(2,-1)]
 let rec test_rot state attempted_rot list =
   match list with
   | [] -> state
-  | h::t -> if is_not_conflict state state.falling attempted_rot h 
-    then {state with falling_rot = attempted_rot; falling_pos = h}
+  | h::t -> if is_not_conflict state state.falling attempted_rot 
+      (fst h + fst state.falling_pos, snd h + snd state.falling_pos) 
+    then {state with falling_rot = attempted_rot; 
+                     falling_pos = fst h + fst state.falling_pos, 
+                                   snd h + snd state.falling_pos}
     else test_rot state attempted_rot t
 
 
