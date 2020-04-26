@@ -2,4 +2,4 @@
 exception Quit 
 
 (** [init level] begins the game starting at [level]. *)
-val init : int -> unit
+val init : int -> Audio.t -> unit
