@@ -44,7 +44,7 @@ let add_to_queue q =
 (** [drop piece state] is the [state] with [piece] initialized as the falling
     piece on the top of the playfield. *)
 let drop (piece:Tetromino.t) (state:t) : t =
-  failwith "Unimplemented"
+  state (* failwith "Unimplemented" *)
 
 let init (width:int) (height:int) (level:int) : t =
   let first, queue =
@@ -83,6 +83,7 @@ let field_width (state:t) : int =
 let field_height (state:t) : int =
   Array.length state.playfield
 
+<<<<<<< HEAD
 (** [check_rows state falling falling_rot falling_pos column row size] 
     is true if the anticipated movement [falling] [falling_rot] [falling_pos] is 
     allowed for a specific row. False otherwise.*)
@@ -140,6 +141,11 @@ let value (state:t) (r:int) (c:int) : v =
     (elem state r c)
   else
     raise InvalidCoordinates
+=======
+let value (state:t) (x:int) (y:int) : v =
+  if Random.bool () then Static (255, 100, 100) else Empty
+(* failwith "unimplemented" *)
+>>>>>>> 07edeae0bd71e35d142c4bc5a408bc94ce847b87
 
 let queue (state:t) : Tetromino.t list =
   state.queue
