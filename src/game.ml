@@ -31,7 +31,7 @@ let rec loop (game:t) : unit =
   let time = Sdltimer.get_ticks () in
   let delta = (time - game.last_update) in
   let game =
-    if delta >= 1000 / 30 then
+    if delta >= 1000 / 60 then
       let state = State.update game.state delta false in
       Graphics.render state;
       {game with state=state; last_update=time}
@@ -40,6 +40,7 @@ let rec loop (game:t) : unit =
   in loop game
 
 let init (level:int) =
+  Random.self_init ();
   loop {
     state = (State.init 10 20 level);
     last_update = (Sdltimer.get_ticks ());

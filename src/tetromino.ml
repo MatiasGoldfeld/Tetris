@@ -8,13 +8,13 @@ let s_default = [[0;1;1];[1;1;0];[0;0;0]]
 let t_default = [[0;1;0];[1;1;1];[0;0;0]]
 let z_default = [[1;1;0];[0;1;1];[0;0;0]]
 
-let l_blue = Some (0,0,0)
-let d_blue = Some (0,0,0)
-let orange = Some (0,0,0)
-let yellow = Some (0,0,0)
-let green = Some (0,0,0)
-let purple = Some (0,0,0)
-let red = Some (0,0,0)
+let l_blue = Some (255,100,100)
+let d_blue = Some (255,100,100)
+let orange = Some (255,100,100)
+let yellow = Some (255,100,100)
+let green = Some (255,100,100)
+let purple = Some (255,100,100)
+let red = Some (255,100,100)
 
 
 type tetromino = 
