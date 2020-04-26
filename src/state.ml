@@ -226,8 +226,11 @@ let ccw034 = [(0,0);(-1,0);(2,0);(-1,2);(2,-1)]
 let rec test_rot state attempted_rot list =
   match list with
   | [] -> state
-  | h::t -> if is_not_conflict state state.falling attempted_rot h 
-    then {state with falling_rot = attempted_rot; falling_pos = h}
+  | h::t -> if is_not_conflict state state.falling attempted_rot 
+      (fst h + fst state.falling_pos, snd h + snd state.falling_pos) 
+    then {state with falling_rot = attempted_rot; 
+                     falling_pos = fst h + fst state.falling_pos, 
+                                   snd h + snd state.falling_pos}
     else test_rot state attempted_rot t
 
 
