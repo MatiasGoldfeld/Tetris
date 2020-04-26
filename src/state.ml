@@ -111,7 +111,7 @@ let rec check_columns state falling falling_rot falling_pos column row size =
   else true
 
 
-(** [is_conflict state falling falling_rot falling_pos] is true if
+(** [is_not_conflict state falling falling_rot falling_pos] is true if
     the anticipated movement [falling] [falling_rot] [falling_pos] is allowed.
     False otherwise. *)
 let is_not_conflict state falling falling_rot falling_pos =
@@ -124,15 +124,25 @@ let rec shadow_coordinates state column row =
   else Some (column, row-1)
 
 
+let shadow_or_ghost (state:t) (c:int) (r:int) =
+  match shadow_coordinates state c r with
+  | Some (column, row) when row = r -> begin
+      match (Tetromino.color state.falling) with
+      | Some color -> Ghost color
+      | _ -> Empty
+    end
+  | _ -> Empty
+
 let elem (state:t) (r:int) (c:int) =
   match state.playfield.(r).(c) with
   | None -> begin
-      let (falling_r, falling_c) = state.falling_pos in
-      let falling_rot = state.falling_rot in
-      if c - falling_c <= Tetromino.size state.falling then
-        match Tetromino.value state.falling falling_rot c falling_r with
+      let tet = state.falling in
+      let (fall_r, fall_c) = state.falling_pos in
+      let fall_rot = state.falling_rot in
+      if c - fall_c < Tetromino.size state.falling then
+        match Tetromino.value tet fall_rot (c-fall_c) (r-fall_r) with
         | Some color -> Falling color
-        | None -> Empty
+        | None -> shadow_or_ghost state c r
       else
         Empty
     end
