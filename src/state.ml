@@ -11,8 +11,6 @@ type v =
   | Static of color
   | Ghost of color
 
-exception InvalidCoordinates
-
 type t = {
   score : int;
   lines : int;
