@@ -166,8 +166,28 @@ let held (state:t) : Tetromino.t option =
   state.held
 
 (** [step state] is the [state] after the falling piece has stepped down. *)
+(** [step state] is the [state] after the falling piece has stepped down. *)
 let step (state:t) : t =
-  failwith "unimplemented"
+  if is_not_conflict state state.falling state.falling_rot 
+      (fst state.falling_pos, snd state.falling_pos + 1)
+  then {state with falling_pos = 
+                     (fst state.falling_pos, snd state.falling_pos + 1)}
+  else begin (for column = fst state.falling_pos to
+                 (fst state.falling_pos + 
+                  (Tetromino.size state.falling)) do
+                for row = fst state.falling_pos to
+                    (snd state.falling_pos + 
+                     (Tetromino.size state.falling)) do
+                  let new_val = Tetromino.value state.falling 
+                      state.falling_rot column row in
+                  if new_val <> None
+                  then state.playfield.(column).(row) <- new_val
+                  else ()
+                done
+              done);
+    drop (List.hd state.queue) 
+      {state with held_before = false; queue = List.tl state.queue}
+  end
 
 (* Matias *)
 let update (state:t) (delta:float) (soft_drop:bool) : t =
