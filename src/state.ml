@@ -85,9 +85,11 @@ let field_height (state:t) : int =
     allowed for a specific row. False otherwise.*)
 let rec check_rows state falling falling_rot falling_pos column row size =
   match Tetromino.value falling falling_rot column row with
-  | Some x when column < size -> if (column < 0 || column >= field_width state||
-                                     row <= field_height state ||
-                                     (state.playfield.(fst falling_pos + column).(snd falling_pos + row)) <> None) 
+  | Some x when column < size -> 
+    if (column < 0 || column >= field_width state||
+        row <= field_height state ||
+        (state.playfield.(fst falling_pos + column).(snd falling_pos + row)) 
+        <> None) 
     then false
     else check_rows state falling falling_rot falling_pos (column + 1) row size
   | None when column < size -> check_rows state falling falling_rot falling_pos 
@@ -109,14 +111,17 @@ let rec check_columns state falling falling_rot falling_pos column row size =
 (** [is_conflict state falling falling_rot falling_pos] is true if
     the anticipated movement [falling] [falling_rot] [falling_pos] is allowed.
     False otherwise. *)
-let is_conflict state falling falling_rot falling_pos =
+let is_not_conflict state falling falling_rot falling_pos =
   let size = Tetromino.size state.falling in
   check_columns state falling falling_rot falling_pos 0 0 size
 
 
-
-
-
+let rec shadow_coordinates state column row=
+  if row >= -2 then 
+    if is_not_conflict state state.falling state.falling_rot (column, row) 
+    then Some (column, row)
+    else shadow_coordinates state column (row - 1)
+  else None
 
 let value (state:t) (x:int) (y:int) : v =
   failwith "unimplemented"
@@ -135,65 +140,80 @@ let step (state:t) : t =
 let update (state:t) (delta:float) (soft_drop:bool) : t =
   failwith("unimplemented")
 
+
+let cw013 = [(0,0);(-1,0);(-1,1);(0,-2);(-1,-2)]
+let ccw103 = [(0,0);(1,0);(1,-1);(0,2);(1,2)]
+let cw123 = [(0,0);(1,0);(1,-1);(0,2);(1,2)]
+let ccw213 = [(0,0);(-1,0);(-1,1);(0,-2);(-1,-2)]
+let cw233 = [(0,0);(1,0);(1,1);(0,-2);(1,-2)]
+let ccw323 = [(0,0);(-1,0);(-1,-1);(0,2);(-1,2)]
+let cw303 = [(0,0);(-1,0);(-1,-1);(0,2);(-1,2)]
+let ccw033 = [(0,0);(1,0);(1,1);(0,-2);(1,-2)]
+
+let cw014 = [(0,0);(-2,0);(1,0);(-2,-1);(1,2)]
+let ccw104 = [(0,0);(2,0);(-1,0);(2,1);(-1,-2)]
+let cw124 = [(0,0);(-1,0);(2,0);(-1,2);(2,-1)]
+let ccw214 = [(0,0);(1,0);(-2,0);(1,-2);(-2,1)]
+let cw234 = [(0,0);(2,0);(-1,0);(2,1);(-1,-2)]
+let ccw324 = [(0,0);(-2,0);(1,0);(-2,-1);(1,2)]
+let cw304 = [(0,0);(1,0);(-2,0);(1,-2);(-2,1)]
+let ccw034 = [(0,0);(-1,0);(2,0);(-1,2);(2,-1)]
+
+
+let rec test_rot state attempted_rot list =
+  match list with
+  | [] -> state
+  | h::t -> if is_not_conflict state state.falling attempted_rot h 
+    then {state with falling_rot = attempted_rot; falling_pos = h}
+    else test_rot state attempted_rot t
+
+
 (* Oliver *)
 let rotate (state:t) (rotation:[`CCW | `CW]) : t =
-  failwith("unimplemented")
+  let size = Tetromino.size state.falling in
+  let rot = state.falling_rot in
+  if size = 2 
+  then state
+  else
+    match rotation with
+    | `CW when rot = 0 -> if size = 3 
+      then test_rot state 1 cw013
+      else test_rot state 1 cw014
+    | `CW when rot = 1 -> if size = 3 
+      then test_rot state 2 cw123
+      else test_rot state 2 cw124
+    | `CW when rot = 2 -> if size = 3 
+      then test_rot state 3 cw233
+      else test_rot state 3 cw234
+    | `CW when rot = 3 -> if size = 3 
+      then test_rot state 0 cw303
+      else test_rot state 0 cw304
+    | `CCW when rot = 0 -> if size = 3 
+      then test_rot state 3 ccw033
+      else test_rot state 3 ccw034
+    | `CCW when rot = 1 -> if size = 3 
+      then test_rot state 0 ccw103
+      else test_rot state 0 ccw104
+    | `CCW when rot = 2 -> if size = 3 
+      then test_rot state 1 ccw213
+      else test_rot state 1 ccw214
+    | `CCW when rot = 3 -> if size = 3 
+      then test_rot state 2 ccw323
+      else test_rot state 2 ccw324
+    | _ -> failwith "impossible rotation"
 
-(* * Comment this up
-   let rec first_block_from_left falling falling_rot column row size =
-   match Tetromino.value falling falling_rot column row with
-   | Some x when column < size -> Some column
-   | None when column < size -> 
-    first_block_from_left falling falling_rot (column + 1) row size
-   | _ -> None 
 
-   (** Comment this up *)
-   let rec first_block_from_right falling falling_rot column row size =
-   match Tetromino.value falling falling_rot column row with
-   | Some x when column > -1 -> Some column
-   | None when column > -1 -> 
-    first_block_from_right falling falling_rot (column - 1) row size
-   | _ -> None 
-
-   (** Comment this up *)
-   let rec check_left state through =
-   let size = Tetromino.size state.falling in
-   match first_block_from_left state.falling state.falling_rot 0 
-          through (size) with
-   | Some x when through < size -> begin 
-      let column = ((fst state.falling_pos) + x) in
-      if (column = 0 || (state.playfield.(column-1).(through)) <> None) 
-      then false 
-      else check_left state (through + 1)
-    end
-   | None when through < size -> check_left state (through + 1)
-   | _ -> true
-
-   (** Comment this up *)
-   let rec check_right state through =
-   let size = Tetromino.size state.falling in
-   match first_block_from_right state.falling state.falling_rot (size - 1) 
-          through (size) with
-   | Some x when through < size -> begin 
-      let column = ((fst state.falling_pos) + x) in
-      if (column = field_width state - 1 || 
-          (state.playfield.(column+1).(through)) <> None) 
-      then false 
-      else check_right state (through + 1)
-    end
-   | None when through < size -> check_right state (through + 1)
-   | _ -> true *)
 
 (* Oliver *)
 let move (state:t) (direction:[`LEFT | `RIGHT]) : t =
   match direction with
-  | `LEFT -> if is_conflict state (state.falling) state.falling_rot 
+  | `LEFT -> if is_not_conflict state (state.falling) state.falling_rot 
       (fst state.falling_pos - 1,
        snd state.falling_pos)
     then {state with falling_pos = (fst state.falling_pos - 1,
                                     snd state.falling_pos)}
     else state
-  | `RIGHT -> if is_conflict state (state.falling) state.falling_rot 
+  | `RIGHT -> if is_not_conflict state (state.falling) state.falling_rot 
       (fst state.falling_pos + 1,
        snd state.falling_pos)
     then {state with falling_pos = (fst state.falling_pos + 1,
@@ -217,7 +237,26 @@ let hold (state:t) : t =
 
 (* Oliver *)
 let hard_drop (state:t) : t =
-  failwith "unimplemented"
+  match shadow_coordinates state (fst state.falling_pos) (field_height state) 
+  with
+  | Some (column, row) -> (for column = fst state.falling_pos to
+                              (fst state.falling_pos + 
+                               (Tetromino.size state.falling)) do
+                             for row = fst state.falling_pos to
+                                 (snd state.falling_pos + 
+                                  (Tetromino.size state.falling)) do
+                               let new_val = Tetromino.value state.falling 
+                                   state.falling_rot column row in
+                               if new_val <> None
+                               then state.playfield.(column).(row) <- new_val
+                               else ()
+                             done
+                           done);
+    drop (List.hd state.queue) 
+      {state with held_before = true; 
+                  queue = List.tl state.queue} 
+  | None -> state
+
 
 let handle_events (state:t) (f:event -> unit) : t =
   List.iter f (List.rev state.events);
