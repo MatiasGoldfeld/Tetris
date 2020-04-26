@@ -159,7 +159,6 @@ let queue (state:t) : Tetromino.t list =
 let held (state:t) : Tetromino.t option =
   state.held
 
-
 (** [step state] is the [state] after the falling piece has stepped down. *)
 let step (state:t) : t =
   if is_not_conflict state state.falling state.falling_rot 
