@@ -1,8 +1,3 @@
-<<<<<<< HEAD
-(* matias *)
-let render (state:State.t) : unit =
-  failwith "unimplemented"
-=======
 let init () : unit =
   Sdl.init_subsystem [`VIDEO];
   ignore (Sdlvideo.set_video_mode 4000 4000 [`RESIZABLE])
@@ -12,7 +7,6 @@ let init () : unit =
 let draw_tetromino (piece:Tetromino.t) (rot:int) (surf:Sdlvideo.surface)
     (x:int) (y:int) (size:int) : unit =
   ()
->>>>>>> 07edeae0bd71e35d142c4bc5a408bc94ce847b87
 
 (** [draw_playfield state size] is the rendered playfield of [state] with a 
     tile length of [size]. *)
