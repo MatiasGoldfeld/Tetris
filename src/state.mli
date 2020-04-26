@@ -2,6 +2,7 @@
 type event = 
   | Rotate 
   | Drop
+  | Locking
 
 type color = int * int * int
 
@@ -34,8 +35,8 @@ val field_width : t -> int
 (** [field_height state] is the height of the [state]'s playfield. *)
 val field_height : t -> int
 
-(** [value state x y] is the [v] of [state's] playfield at 
-    coordinates [(x, y)] *)
+(** [value state r c] is the [v] of [state's] playfield at 
+    coordinates [(r, c)] *)
 val value : t -> int -> int -> v
 
 (** [queue state] is the queue of tetrominos to be used next in the game. *)

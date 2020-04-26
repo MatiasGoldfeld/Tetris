@@ -1,5 +1,5 @@
 
-
+(* oliver *)
 let i_default = [[0;0;0;0];[1;1;1;1];[0;0;0;0];[0;0;0;0]]
 let j_default = [[1;0;0];[1;1;1];[0;0;0]]
 let l_default = [[0;0;1];[1;1;1];[0;0;0]]
@@ -59,8 +59,19 @@ let find_coord_val rot x y piece_list size color =
               |> Float.to_int in
   if iterator new_x new_y piece_list = 1 then color else None
 
+let color t =
+  match t with 
+  | O -> yellow
+  | I -> l_blue
+  | L -> d_blue
+  | J -> orange
+  | S -> green
+  | T -> purple
+  | Z -> red
 
-
+(* the largest dimension. make tetrominos as big as bounding box *)
+let size =
+  failwith "unimplemented"
 
 let value t rot column row = 
   let s = size t in

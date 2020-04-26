@@ -1,6 +1,6 @@
 (** Temporary main for testing purposes *)
 
-let main () =
+let main () = 
   Sdl.init [`VIDEO];
   let s = Sdlvideo.set_video_mode 400 400 [`RESIZABLE] in
   Sdltimer.delay 2000;
