@@ -9,7 +9,6 @@ let draw_tetromino (piece:Tetromino.t) (rot:int) (surf:Sdlvideo.surface)
     (x:int) (y:int) (size:int) : unit =
   ()
 
-
 (** [draw_playfield state size] is the rendered playfield of [state] with a 
     tile length of [size]. *)
 let draw_playfield (state:State.t) (size:int) : Sdlvideo.surface =
