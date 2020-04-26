@@ -1,5 +1,5 @@
 MODULES=audio game graphics main state tetromino
-PKGS=sdl
+PKGS=sdl,sdl.sdlmixer
 SRC=src/
 PATHS=$(addprefix $(SRC), $(MODULES))
 OBJECTS=$(PATHS:=.cmo)
@@ -15,7 +15,7 @@ default: build
 build:
 	$(OCAMLBUILD) $(OBJECTS)
 
-test:
+test: 
 	$(OCAMLBUILD) -tag 'debug' $(SRC)$(TEST) && ./$(TEST)
 
 play:
