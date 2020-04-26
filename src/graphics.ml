@@ -1,3 +1,4 @@
+
 let init () : unit =
   Sdl.init_subsystem [`VIDEO];
   ignore (Sdlvideo.set_video_mode 4000 4000 [`RESIZABLE])
