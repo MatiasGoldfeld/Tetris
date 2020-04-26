@@ -75,7 +75,7 @@ let color t =
 let value t rot column row = 
   let s = size t in
   if (column >= s || column < 0 || row >= s || row < 0) 
-  then failwith "Out of bounds error"
+  then None
   else
     match t with
     | O -> yellow
