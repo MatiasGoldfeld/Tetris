@@ -59,7 +59,7 @@ let draw_queue (state:State.t) (size:int) (n:int) : Sdlvideo.surface =
 
 let render (state:State.t) : unit =
   let screen = Sdlvideo.get_video_surface () in
-  let playfield = draw_playfield state 50 in
+  let playfield = draw_playfield state 70 in
   (* let queue = draw_queue state 50 7 in *)
   Sdlvideo.blit_surface playfield screen ();
   (* Sdlvideo.blit_surface ~src:queue ~dst:screen
