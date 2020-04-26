@@ -23,7 +23,7 @@ type t = {
   held_before : bool;
   falling : Tetromino.t;
   falling_rot : int;
-  (* The (c, r) position of the falling tetromino. *)
+  (* The (x, y) position of the falling tetromino. *)
   falling_pos : int*int;
   (* The array of rows, with 0 representing the top row. The columns are arrays
      of color options, with 0 representing the left column. *)
@@ -50,6 +50,8 @@ let drop (piece:Tetromino.t) (state:t) : t =
   {state with falling = piece; falling_rot = 0; falling_pos = (4, -1); 
               queue = new_queue}
 
+
+
 let init (width:int) (height:int) (level:int) : t =
   let first, queue =
     match shuffle Tetromino.defaults @ shuffle Tetromino.defaults with
@@ -68,7 +70,6 @@ let init (width:int) (height:int) (level:int) : t =
     falling_pos = 0, 0;
     playfield = Array.make_matrix height width None
   }
-
 
 
 
@@ -115,47 +116,40 @@ let rec check_columns state falling falling_rot falling_pos column row size =
   else true
 
 
-(** [is_not_conflict state falling falling_rot falling_pos] is true if
+(** [is_conflict state falling falling_rot falling_pos] is true if
     the anticipated movement [falling] [falling_rot] [falling_pos] is allowed.
     False otherwise. *)
 let is_not_conflict state falling falling_rot falling_pos =
   let size = Tetromino.size state.falling in
   check_columns state falling falling_rot falling_pos 0 0 size
 
+
 let rec shadow_coordinates state column row =
   if is_not_conflict state state.falling state.falling_rot (column, row) 
   then shadow_coordinates state column (row + 1)
   else Some (column, row-1)
 
+let empty_or_ghost (state:t) (r:int) (c:int) =
+  let pos = state.falling_pos in
+  let tet = state.falling in
+  let rot = state.falling_rot in
+  if is_not_conflict state tet rot pos then Empty
+  else match (Tetromino.color tet) with
+    | Some color -> Ghost color
+    | None -> Empty
 
-let shadow_or_ghost (state:t) (c:int) (r:int) =
-  match shadow_coordinates state c r with
-  | Some (column, row) when row = r -> begin
-      match (Tetromino.color state.falling) with
-      | Some color -> Ghost color
-      | _ -> Empty
-    end
-  | _ -> Empty
-
-let elem (state:t) (c:int) (r:int) =
+let elem (state:t) (r:int) (c:int) =
   match state.playfield.(r).(c) with
-  | None -> begin
-      let tet = state.falling in
-      let (fall_c, fall_r) = state.falling_pos in
-      let fall_rot = state.falling_rot in
-      if c >= fall_c && c - fall_c < Tetromino.size state.falling then
-        match Tetromino.value tet fall_rot (c-fall_c) (r-fall_r) with
-        | Some color -> Falling color
-        | None -> shadow_or_ghost state c r
-      else
-        Empty
-    end
+  | None -> empty_or_ghost state r c
+  | Some color when 
+      r < (field_height state) - state.level - Tetromino.size state.falling
+    -> Falling color
   | Some color -> Static color
 
 (* angelina *)
-let value (state:t) (c:int) (r:int) : v =
+let value (state:t) (r:int) (c:int) : v =
   if r >= 0 && c >= 0 && r < field_height state && c < field_width state then 
-    (elem state c r)
+    (elem state r c)
   else
     raise InvalidCoordinates
 
