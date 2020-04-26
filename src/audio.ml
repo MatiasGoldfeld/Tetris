@@ -36,6 +36,7 @@ let adjust_music (audio:t) (volume:float) =
 
 let start_music (audio:t) =
   let music = Sdlmixer.load_music audio.music in
+  Sdlmixer.setvolume_music 0.1;
   Sdlmixer.fadein_music music 1.0
 
 let stop_music (audio:t) =
