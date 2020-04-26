@@ -23,7 +23,7 @@ type t = {
   held_before : bool;
   falling : Tetromino.t;
   falling_rot : int;
-  (* The (x, y) position of the falling tetromino. *)
+  (* The (c, r) position of the falling tetromino. *)
   falling_pos : int*int;
   (* The array of rows, with 0 representing the top row. The columns are arrays
      of color options, with 0 representing the left column. *)
@@ -133,13 +133,13 @@ let shadow_or_ghost (state:t) (c:int) (r:int) =
     end
   | _ -> Empty
 
-let elem (state:t) (r:int) (c:int) =
+let elem (state:t) (c:int) (r:int) =
   match state.playfield.(r).(c) with
   | None -> begin
       let tet = state.falling in
-      let (fall_r, fall_c) = state.falling_pos in
+      let (fall_c, fall_r) = state.falling_pos in
       let fall_rot = state.falling_rot in
-      if c - fall_c < Tetromino.size state.falling then
+      if c >= fall_c && c - fall_c < Tetromino.size state.falling then
         match Tetromino.value tet fall_rot (c-fall_c) (r-fall_r) with
         | Some color -> Falling color
         | None -> shadow_or_ghost state c r
@@ -149,9 +149,9 @@ let elem (state:t) (r:int) (c:int) =
   | Some color -> Static color
 
 (* angelina *)
-let value (state:t) (r:int) (c:int) : v =
+let value (state:t) (c:int) (r:int) : v =
   if r >= 0 && c >= 0 && r < field_height state && c < field_width state then 
-    (elem state r c)
+    (elem state c r)
   else
     raise InvalidCoordinates
 
