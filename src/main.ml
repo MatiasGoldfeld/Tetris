@@ -1,11 +1,13 @@
-(** Temporary main for testing purposes *)
+open Tsdl
+
 let main () =
-  Sdl.init [];
-  Graphics.init ();
-  let audio = Audio.init "./resources/" in
-  begin try Game.init 1 audio; with
-      Game.Quit -> print_endline "Game quit unexpectedly"
-  end;
-  Sdl.quit ()
+  match Sdl.init Sdl.Init.(events + timer) with
+  | Error (`Msg e) -> Sdl.log "Main init error: %s" e; exit 1
+  | Ok () ->
+    let audio = Audio.init "./resources/audio/" in
+    let graphics = Graphics.init () in
+    Game.init 1 audio graphics;
+    Sdl.quit ();
+    exit 0
 
 let () = main ()

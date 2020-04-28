@@ -1,6 +1,10 @@
-(** [init] initializes the graphics system. Should be called once before
-    graphics is outputed. *)
-val init : unit -> unit
+(** The representation of the graphics context used to display and render. *)
+type t
 
-(** [render state] provides a graphical representation of [state]. *)
-val render : State.t -> unit
+(** [init] initializes the graphics system, giving a graphics context.
+    Should be called once before graphics is outputed. *)
+val init : unit -> t
+
+(** [render ctx state] provides a graphical representation of [state] using
+    graphics context [ctx]. *)
+val render : t -> State.t -> unit
