@@ -1,1 +1,1 @@
-true: package(sdl), package(sdl.sdlmixer), package(sdl.sdlttf)
+true: package(tsdl), package(tsdl_mixer), package(tsdl_ttf)

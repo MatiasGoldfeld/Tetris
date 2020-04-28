@@ -1,5 +1,3 @@
-(** [Quit] is thrown when the user quits the program unexpectedly. *)
-exception Quit 
-
-(** [init level] begins the game starting at [level]. *)
-val init : int -> Audio.t -> unit
+(** [init level audio graphics] begins the game starting at [level], using
+    [audio] and [graphics] contexts. *)
+val init : int -> Audio.t -> Graphics.t -> unit

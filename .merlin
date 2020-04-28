@@ -1,6 +1,6 @@
 S src
 B _build/src
 PKG oUnit
-PKG sdl
-PKG sdl.sdlmixer
-PKG sdl.sdlttf
+PKG tsdl
+PKG tsdl_mixer
+PKG tsdl_ttf
