@@ -6,6 +6,7 @@ let main () =
   | Ok () ->
     let audio = Audio.init "./resources/audio/" in
     let graphics = Graphics.init () in
+    Audio.adjust_music audio 0.05;
     let game_controls = [
       (Sdl.K.left, Game.Move_left);
       (Sdl.K.right, Game.Move_right);
