@@ -1,33 +1,76 @@
+type wall_kicks = {
+  cw : (int * int) list;
+  ccw : (int * int) list;
+}
 
-(* oliver *)
-let i_default = [[0;0;0;0];[1;1;1;1];[0;0;0;0];[0;0;0;0]]
-let j_default = [[1;0;0];[1;1;1];[0;0;0]]
-let l_default = [[0;0;1];[1;1;1];[0;0;0]]
-let o_default = [[1;1];[1;1]]
-let s_default = [[0;1;1];[1;1;0];[0;0;0]]
-let t_default = [[0;1;0];[1;1;1];[0;0;0]]
-let z_default = [[1;1;0];[0;1;1];[0;0;0]]
+let wall_kicks_3 = [|
+  { ccw = [(0,0); (-1,0); (-1, 1); ( 0,-2); (-1,-2)]; 
+    cw =  [(0,0); (-2,0); ( 1, 0); (-2,-1); ( 1, 2)]; };
+  { ccw = [(0,0); ( 1,0); ( 1,-1); ( 0, 2); ( 1, 2)]; 
+    cw =  [(0,0); ( 1,0); ( 1,-1); ( 0, 2); ( 1, 2)]; };
+  { ccw = [(0,0); (-1,0); (-1, 1); ( 0,-2); (-1,-2)]; 
+    cw =  [(0,0); ( 1,0); ( 1, 1); ( 0,-2); ( 1,-2)]; };
+  { ccw = [(0,0); (-1,0); (-1,-1); ( 0, 2); (-1, 2)]; 
+    cw =  [(0,0); (-1,0); (-1,-1); ( 0, 2); (-1, 2)]; };
+|]
 
-let l_blue = Some (0,255,255)
-let d_blue = Some (0,0,255)
-let orange = Some (255,165,0)
-let yellow = Some (255,255,0)
-let green = Some (0,128,0)
-let purple = Some (128,0,128)
-let red = Some (255,0,0)
+let wall_kicks_4 = [|
+  { ccw = [(0,0); (-1,0); ( 2,0); (-1, 2); ( 2,-1)]; 
+    cw =  [(0,0); (-2,0); ( 1,0); (-2,-1); ( 1, 2)]; };
+  { ccw = [(0,0); ( 2,0); (-1,0); ( 2, 1); (-1,-2)]; 
+    cw =  [(0,0); (-1,0); ( 2,0); (-1, 2); ( 2,-1)]; };
+  { ccw = [(0,0); ( 1,0); (-2,0); ( 1,-2); (-2, 1)]; 
+    cw =  [(0,0); ( 2,0); (-1,0); ( 2, 1); (-1,-2)]; };
+  { ccw = [(0,0); (-2,0); ( 1,0); (-2,-1); ( 1, 2)]; 
+    cw =  [(0,0); ( 1,0); (-2,0); ( 1,-2); (-2, 1)]; };
+|]
 
-type tetromino = 
-    I | J | L | O | S | T | Z
+type t = {
+  color : int * int * int;
+  shape : int list list;
+  wall_kicks : wall_kicks array;
+}
 
-type t = tetromino
+let defaults = [
+  { (* i tetromino *)
+    color = (0, 255, 255);
+    shape = [[0;0;0;0];[1;1;1;1];[0;0;0;0];[0;0;0;0]];
+    wall_kicks = wall_kicks_4;
+  };
+  { (* j tetromino *)
+    color = (255, 165, 0);
+    shape = [[1;0;0];[1;1;1];[0;0;0]];
+    wall_kicks = wall_kicks_3;
+  };
+  { (* l tetromino *)
+    color = (0, 0, 255);
+    shape = [[0;0;1];[1;1;1];[0;0;0]];
+    wall_kicks = wall_kicks_3;
+  };
+  { (* o tetromino *)
+    color = (255, 255, 0);
+    shape = [[1;1];[1;1]];
+    wall_kicks = wall_kicks_3;
+  };
+  { (* s tetromino *)
+    color = (0, 128, 0);
+    shape = [[0;1;1];[1;1;0];[0;0;0]];
+    wall_kicks = wall_kicks_3;
+  };
+  { (* z tetromino *)
+    color = (255, 0, 0);
+    shape = [[1;1;0];[0;1;1];[0;0;0]];
+    wall_kicks = wall_kicks_3;
+  };
+  { (* t tetromino *)
+    color = (128, 0, 128);
+    shape = [[0;1;0];[1;1;1];[0;0;0]];
+    wall_kicks = wall_kicks_3;
+  };
+]
 
-let defaults = 
-  [I; J; L; O; S; T; Z]
-
-let size = function
-  | O -> 2
-  | I -> 4
-  | J | L | S | T | Z -> 3
+let size (piece:t) : int =
+  List.length piece.shape
 
 let max_size =
   List.map size defaults
@@ -47,8 +90,8 @@ let rec iterator x y piece_list : int =
 
 (** [find_coord_val] is the value in a 2d list of ints at that coordinate 
     point according to a certain rotation of the 2d list. *)
-let find_coord_val rot x y piece_list size color = 
-  let change = (Float.of_int (size-1)) /. 2. in
+let find_coord_val rot x y piece = 
+  let change = (Float.of_int (size piece-1)) /. 2. in
   let new_x = ((((Float.of_int x) -. change) *. 
                 (cos (pi /. 2. *. Float.of_int rot)) 
                 -. ((Float.of_int y) -. change) *. 
@@ -59,27 +102,9 @@ let find_coord_val rot x y piece_list size color =
                 +. ((Float.of_int x) -. change) *. 
                    (sin (pi /. 2. *. Float.of_int rot)) +. change) +. 0.5) 
               |> Float.to_int in
-  if iterator new_x new_y piece_list = 1 then color else None
-
-let color t =
-  match t with 
-  | O -> yellow
-  | I -> l_blue
-  | L -> d_blue
-  | J -> orange
-  | S -> green
-  | T -> purple
-  | Z -> red
+  if iterator new_x new_y piece.shape = 1 then Some piece.color else None
 
 let value t rot column row = 
   let s = size t in
-  if (column >= s || column < 0 || row >= s || row < 0) then
-    None
-  else match t with
-    | O -> yellow
-    | I -> find_coord_val rot column row i_default (size I) l_blue
-    | L -> find_coord_val rot column row l_default (size L) d_blue
-    | J -> find_coord_val rot column row j_default (size J) orange
-    | S -> find_coord_val rot column row s_default (size S) green
-    | T -> find_coord_val rot column row t_default (size T) purple
-    | Z -> find_coord_val rot column row z_default (size Z) red
+  if (column >= s || column < 0 || row >= s || row < 0) then None
+  else find_coord_val rot column row t
