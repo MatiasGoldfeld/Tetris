@@ -109,35 +109,28 @@ let field_width (state:t) : int =
 let field_height (state:t) : int =
   Array.length state.playfield
 
-(** [check_row state falling falling_rot falling_pos col row] 
-    is true if the anticipated movement [falling] [falling_rot] [falling_pos] is 
-    allowed for a specific row. False otherwise.*)
-let rec check_row state falling falling_rot falling_pos col row =
-  col >= Tetromino.size falling || (begin
-      match Tetromino.value falling falling_rot col row with
-      | Some x -> 
-        let abs_col = fst falling_pos + col in
-        let abs_row = snd falling_pos + row in
-        abs_col >= 0 && abs_col < field_width state &&
-        abs_row >= 0 && abs_row < field_height state &&
-        state.playfield.(abs_row).(abs_col) = None
-      | None ->
-        true
-    end && check_row state falling falling_rot falling_pos (col + 1) row)
-
-(** [check_playfield state falling falling_rot falling_pos col row] 
-    is true if the anticipated movement [falling] [falling_rot] [falling_pos] is 
-    allowed. False otherwise.*)
-let rec check_playfield state falling falling_rot falling_pos col row =
-  row >= Tetromino.size falling || begin
-    check_row state falling falling_rot falling_pos col row && 
-    check_playfield state falling falling_rot falling_pos col (row + 1)
-  end
-
 (** [legal state falling falling_rot falling_pos] is true if the anticipated
     movement [falling] [falling_rot] [falling_pos] is legal. False otherwise. *)
 let legal state falling falling_rot falling_pos =
-  check_playfield state falling falling_rot falling_pos 0 0
+  let rec check_row col row =
+    col >= Tetromino.size falling || (begin
+        match Tetromino.value falling falling_rot col row with
+        | Some x -> 
+          let abs_col = fst falling_pos + col in
+          let abs_row = snd falling_pos + row in
+          abs_col >= 0 && abs_col < field_width state &&
+          abs_row >= 0 && abs_row < field_height state &&
+          state.playfield.(abs_row).(abs_col) = None
+        | None ->
+          true
+      end && check_row (col + 1) row)
+  in 
+  let rec check_playfield col row =
+    row >= Tetromino.size falling || begin
+      check_row col row && 
+      check_playfield col (row + 1)
+    end
+  in check_playfield 0 0
 
 let rec shadow_coordinates state column row =
   if not (legal state state.falling state.falling_rot (column, row))
