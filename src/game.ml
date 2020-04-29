@@ -35,7 +35,9 @@ let rec loop (game:t) : unit =
   let delta = (time - game.last_update) in
   let game =
     if delta >= 1000 / 60 then
-      let state = State.update game.state delta false in
+      let soft_drop = (Sdl.get_keyboard_state ()).
+                        {Sdl.get_scancode_from_key Sdl.K.down} = 1 in
+      let state = State.update game.state delta soft_drop in
       Graphics.render game.graphics state;
       {game with state=state; last_update=time}
     else
@@ -55,8 +57,8 @@ let init (level:int) (audio:Audio.t) (graphics:Graphics.t)=
                |> KeyMap.add Sdl.K.up (State.rotate `CCW)
                |> KeyMap.add Sdl.K.z (State.rotate `CW)
                |> KeyMap.add Sdl.K.x (State.rotate `CCW)
-               |> KeyMap.add Sdl.K.c (State.hold);
-    (* |> KeyMap.add Sdl.K.space (State.hard_drop); *)
+               |> KeyMap.add Sdl.K.c (State.hold)
+               |> KeyMap.add Sdl.K.space (State.hard_drop);
     audio = audio;
     graphics = graphics;
   }

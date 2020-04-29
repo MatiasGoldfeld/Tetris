@@ -9,14 +9,15 @@ exception InvalidCoordinates of string
 
 type v =
   | Empty
-  | Falling of color
+  | Falling of color * int
   | Static of color
-  | Ghost of color
+  | Ghost of color * int
 
 type t = {
   score : int;
   lines : int;
   level : int;
+  fall_speed : int;
   step_delta : int;
   events : event list;
   queue : Tetromino.t list;
@@ -56,25 +57,37 @@ let drop (piece:Tetromino.t) (state:t) : t = {
       state.queue
 }
 
+(** [recalculate_fall_speed state] is [state] with the fall speed adjusted to
+    current level. *)
+let recalculate_fall_speed (state:t) : t =
+  let level_f = Int.to_float state.level in
+  let fall_speed =
+    1000. *. (0.8 -. ((level_f -. 1.) *. 0.007)) ** (level_f -. 1.) in
+  {state with fall_speed=Float.to_int fall_speed}
+
 let init (width:int) (height:int) (level:int) : t =
   let first, queue =
     match shuffle Tetromino.defaults @ shuffle Tetromino.defaults with
     | h::t -> h, t
     | _ -> failwith "Unexpected empty starting queue"
-  in drop first {
+  in
+  {
     score = 0;
     lines = 0;
     level = level;
+    fall_speed = -1;
     step_delta = 0;
     events = [];
     queue = queue;
     held = None;
     held_before = false;
     falling = first;
-    falling_rot = 0;
-    falling_pos = 0, 0;
+    falling_rot = -1;
+    falling_pos = -1, -1;
     playfield = Array.make_matrix height width None
   }
+  |> drop first
+  |> recalculate_fall_speed
 
 let score (state:t) : int =
   state.score
@@ -135,7 +148,7 @@ let shadow_or_ghost (state:t) (c:int) (r:int) =
   match shadow_coordinates state c r with
   | Some (column, row) when row = r -> begin
       match (Tetromino.color state.falling) with
-      | Some color -> Ghost color
+      | Some color -> Ghost (color, 63)
       | _ -> Empty
     end
   | _ -> Empty
@@ -148,7 +161,7 @@ let elem (state:t) (c:int) (r:int) =
       let fall_rot = state.falling_rot in
       if c >= fall_c && c - fall_c < Tetromino.size state.falling then
         match Tetromino.value tet fall_rot (c-fall_c) (r-fall_r) with
-        | Some color -> Falling color
+        | Some color -> Falling (color, 255)
         | None -> shadow_or_ghost state c r
       else
         Empty
@@ -199,12 +212,11 @@ let step (state:t) : t =
 
 (* Matias *)
 let update (state:t) (delta:int) (soft_drop:bool) : t =
-  (* let adjust = if soft_drop then 500 else 1000 in *)
-  if state.step_delta >= 500
-  (* ((500 -  state.level - state.level - 1) * 20)) * adjust  *)
-  then step state
-  else {state with step_delta = state.step_delta + delta}
-
+  let new_delta = state.step_delta + delta * if soft_drop then 20 else 1 in
+  let state = {state with step_delta=new_delta} in
+  if state.step_delta >= state.fall_speed then
+    step state
+  else state
 
 let cw013 = [(0,0);(-1,0);(-1,1);(0,-2);(-1,-2)]
 let ccw103 = [(0,0);(1,0);(1,-1);(0,2);(1,2)]

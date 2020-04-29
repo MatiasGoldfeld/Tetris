@@ -18,11 +18,14 @@ let unpack (message:string) (result:'a Sdl.result) : 'a =
 let set_color (r,g,b:int*int*int) ?(a:int=255) (ctx:t): unit =
   Sdl.set_render_draw_color ctx.renderer r g b a |> ignore
 
-(** [fill_rect x y width height] fills a rectangle using [ctx] at coordinates
-    [(x, y)] with size [width] by [height]. *)
-let fill_rect (x:int) (y:int) (w:int) (h:int) (ctx:t) : unit = 
-  let rect = Sdl.Rect.create x y w h in
+(** [fill_rect rect ctx] fills [rect] using [ctx]. *)
+let fill_rect (rect:Sdl.rect) (ctx:t) : unit = 
   Sdl.render_fill_rect ctx.renderer (Some rect) |> ignore
+
+(** [fill_coords x y width height ctx] fills a rectangle using [ctx] at
+    coordinates [(x, y)] with size [width] by [height]. *)
+let fill_coords (x:int) (y:int) (w:int) (h:int) (ctx:t) : unit = 
+  let rect = Sdl.Rect.create x y w h in fill_rect rect ctx
 
 let init () : t =
   Sdl.init_sub_system Sdl.Init.video |> unpack "Graphics init error";
@@ -35,6 +38,8 @@ let init () : t =
   let renderer =
     Sdl.create_renderer window
     |> unpack "Create renderer error" in
+  Sdl.(set_render_draw_blend_mode renderer Blend.mode_blend)
+  |> unpack "Error setting renderer blend mode";
   {
     window=window;
     renderer=renderer;
@@ -62,10 +67,13 @@ let draw_playfield (ctx:t) (state:State.t) (x,y:int*int) (size:int) : unit =
     for col = 0 to (cols-1) do
       let rect = Sdl.Rect.create (x + col * size) (y + row * size) size size in
       match State.value state col row with
-      | State.Static color | State.Falling color->
+      | State.Static color ->
         set_color color ctx;
-        Sdl.render_fill_rect ctx.renderer (Some rect) |> ignore;
-      | State.Ghost _ | State.Empty -> ()
+        fill_rect rect ctx
+      | State.Falling (color, a) | State.Ghost (color, a) ->
+        set_color color ~a:a ctx;
+        fill_rect rect ctx
+      | State.Empty -> ()
     done
   done;
 
@@ -73,10 +81,10 @@ let draw_playfield (ctx:t) (state:State.t) (x,y:int*int) (size:int) : unit =
   let border = 2 in
   set_color (200, 200, 200) ~a:255 ctx;
   for row = 0 to rows do
-    fill_rect x (y + row * size - border) width (2 * border) ctx
+    fill_coords x (y + row * size - border) width (2 * border) ctx
   done;
   for col = 0 to cols do
-    fill_rect (x + col * size - border) y (2 * border) height ctx
+    fill_coords (x + col * size - border) y (2 * border) height ctx
   done
 
 (** [draw_queue ctx state size n] is the rendered queue of [state] with a 
