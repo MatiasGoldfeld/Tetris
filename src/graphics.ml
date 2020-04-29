@@ -91,14 +91,11 @@ let draw_playfield (ctx:t) (state:State.t) (x,y:int*int) (size:int) : unit =
     tile length of [size] in graphics context [ctx]. Only the first [n]
     tetronimoes are drawn.
     Requires: 0 <= [n] <= [List.length Tetromino.defaults] *)
-(* let draw_queue (ctx:t) (state:State.t) (size:int) (n:int) : unit =
-   let border = size in
-   let width = Tetromino.max_size * size + 2 * border in
-   let height = (State.field_height state) * size in
-   let surf = Sdlvideo.create_RGB_surface_format
-      (Sdlvideo.get_video_surface ()) [] width height in
-
-   surf *)
+let draw_queue (ctx:t) (state:State.t) (size:int) (n:int) : unit =
+  let border = size in
+  let width = Tetromino.max_size * size + 2 * border in
+  let height = (State.field_height state) * size in
+  ()
 
 let render (ctx:t) (state:State.t) : unit =
   set_color (50, 50, 50) ctx;

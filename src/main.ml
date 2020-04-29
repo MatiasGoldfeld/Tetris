@@ -6,7 +6,17 @@ let main () =
   | Ok () ->
     let audio = Audio.init "./resources/audio/" in
     let graphics = Graphics.init () in
-    Game.init 1 audio graphics;
+    let game_controls = [
+      (Sdl.K.left, Game.Move_left);
+      (Sdl.K.right, Game.Move_right);
+      (Sdl.K.up, Game.Rotate_cw);
+      (Sdl.K.z, Game.Rotate_ccw);
+      (Sdl.K.x, Game.Rotate_cw);
+      (Sdl.K.down, Game.Soft_drop);
+      (Sdl.K.space, Game.Hard_drop);
+      (Sdl.K.c, Game.Hold);
+    ] in
+    Game.init 1 [] game_controls audio graphics;
     Sdl.quit ();
     exit 0
 
