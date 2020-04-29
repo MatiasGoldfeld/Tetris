@@ -98,7 +98,7 @@ let draw_queue (ctx:t) (state:State.t) (size:int) (n:int) : unit =
   ()
 
 let render (ctx:t) (state:State.t) : unit =
-  set_color (50, 50, 50) ctx;
+  set_color (80, 80, 80) ctx;
   Sdl.render_clear ctx.renderer |> unpack "Failed to clear renderer";
   draw_playfield ctx state (0, 0) 70;
   Sdl.render_present ctx.renderer
