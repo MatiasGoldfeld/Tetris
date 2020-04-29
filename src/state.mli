@@ -57,7 +57,7 @@ val rotate : [`CCW | `CW] -> t -> t
 
 (** [move direction state] is [state] with an attempt to move the falling
     piece in [direction]. *)
-val move : [`LEFT | `RIGHT] -> t -> t
+val move : [`Left | `Right] -> t -> t
 
 (** [hold state] is the state of the game after attempting to hold a piece. *)
 val hold : t -> t

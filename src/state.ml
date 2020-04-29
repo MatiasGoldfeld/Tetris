@@ -28,7 +28,8 @@ type t = {
   (* The (c, r) position of the falling tetromino. *)
   falling_pos : int*int;
   (* The array of rows, with 0 representing the top row. The columns are arrays
-     of color options, with 0 representing the left column. *)
+     of color options, with 0 representing the left column. Only blocks already
+     placed on the playfield are represented here. *)
   playfield : color option array array
 }
 
@@ -60,7 +61,11 @@ let drop (piece:Tetromino.t) (state:t) : t = {
 (** [recalculate_fall_speed state] is [state] with the fall speed adjusted to
     current level. *)
 let recalculate_fall_speed (state:t) : t =
-  let level_f = Int.to_float state.level in
+  let level_f = state.level 
+                |> max 1
+                |> min 15
+                |> Int.to_float
+  in
   let fall_speed =
     1000. *. (0.8 -. ((level_f -. 1.) *. 0.007)) ** (level_f -. 1.) in
   {state with fall_speed=Float.to_int fall_speed}
@@ -168,7 +173,6 @@ let elem (state:t) (c:int) (r:int) =
     end
   | Some color -> Static color
 
-(* angelina *)
 let value (state:t) (c:int) (r:int) : v =
   if r >= 0 && c >= 0 && r < field_height state && c < field_width state then 
     (elem state c r)
@@ -210,7 +214,6 @@ let step (state:t) : t =
                   step_delta = 0}
   end
 
-(* Matias *)
 let update (state:t) (delta:int) (soft_drop:bool) : t =
   let new_delta = state.step_delta + delta * if soft_drop then 20 else 1 in
   let state = {state with step_delta=new_delta} in
@@ -236,7 +239,6 @@ let ccw324 = [(0,0);(-2,0);(1,0);(-2,-1);(1,2)]
 let cw304 = [(0,0);(1,0);(-2,0);(1,-2);(-2,1)]
 let ccw034 = [(0,0);(-1,0);(2,0);(-1,2);(2,-1)]
 
-
 let rec test_rot state attempted_rot list =
   match list with
   | [] -> state
@@ -247,8 +249,6 @@ let rec test_rot state attempted_rot list =
                                    snd h + snd state.falling_pos}
     else test_rot state attempted_rot t
 
-
-(* Oliver *)
 let rotate (rotation:[`CCW | `CW]) (state:t) : t =
   let size = Tetromino.size state.falling in
   let rot = state.falling_rot in
@@ -282,25 +282,21 @@ let rotate (rotation:[`CCW | `CW]) (state:t) : t =
       else test_rot state 2 ccw324
     | _ -> failwith "impossible rotation"
 
-
-
-(* Oliver *)
-let move (direction:[`LEFT | `RIGHT]) (state:t) : t =
+let move (direction:[`Left | `Right]) (state:t) : t =
   match direction with
-  | `LEFT -> if is_not_conflict state (state.falling) state.falling_rot 
+  | `Left -> if is_not_conflict state (state.falling) state.falling_rot 
       (fst state.falling_pos - 1,
        snd state.falling_pos)
     then {state with falling_pos = (fst state.falling_pos - 1,
                                     snd state.falling_pos)}
     else state
-  | `RIGHT -> if is_not_conflict state (state.falling) state.falling_rot 
+  | `Right -> if is_not_conflict state (state.falling) state.falling_rot 
       (fst state.falling_pos + 1,
        snd state.falling_pos)
     then {state with falling_pos = (fst state.falling_pos + 1,
                                     snd state.falling_pos)}
     else state
 
-(* Oliver *)
 let hold (state:t) : t =
   match held state with
   | None -> drop (List.hd state.queue) 
@@ -311,7 +307,6 @@ let hold (state:t) : t =
     then state
     else drop p {state with held = Some state.falling; held_before = true}
 
-(* Oliver *)
 let hard_drop (state:t) : t =
   match shadow_coordinates state (fst state.falling_pos) (snd state.falling_pos) 
   with
@@ -332,7 +327,6 @@ let hard_drop (state:t) : t =
       {state with held_before = true; 
                   queue = List.tl state.queue} 
   | None -> state
-
 
 let handle_events (f:event -> unit) (state:t) : t =
   List.iter f (List.rev state.events);
