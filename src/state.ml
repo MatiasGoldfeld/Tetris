@@ -40,9 +40,15 @@ let shuffle (lst:'a list) : 'a list =
   |> List.sort compare
   |> List.map snd
 
-(** Comment this up *)
-let add_to_queue q =
-  q @ shuffle Tetromino.defaults
+(** [next_piece state] returns the next piece of the queue in [state], along
+    with an updated state. *)
+let next_piece (state:t) : t * Tetromino.t =
+  let queue =
+    if List.length state.queue - 1 < List.length Tetromino.defaults then
+      state.queue @ shuffle Tetromino.defaults
+    else
+      state.queue
+  in {state with queue = List.tl queue}, List.hd queue
 
 (** [drop piece state] is the [state] with [piece] initialized as the falling
     piece on the top of the playfield. *)
@@ -50,12 +56,7 @@ let drop (piece:Tetromino.t) (state:t) : t = {
   state with
   falling = piece;
   falling_rot = 0;
-  falling_pos = (4, 0);
-  queue =
-    if List.length state.queue < (List.length Tetromino.defaults) then
-      add_to_queue state.queue
-    else
-      state.queue
+  falling_pos = (5 - (Tetromino.size piece / 2), -1);
 }
 
 (** [recalculate_fall_speed state] is [state] with the fall speed adjusted to
@@ -68,14 +69,10 @@ let recalculate_fall_speed (state:t) : t =
   in
   let fall_speed =
     1000. *. (0.8 -. ((level_f -. 1.) *. 0.007)) ** (level_f -. 1.) in
-  {state with fall_speed=Float.to_int fall_speed}
+  {state with fall_speed = Float.to_int fall_speed}
 
 let init (width:int) (height:int) (level:int) : t =
-  let first, queue =
-    match shuffle Tetromino.defaults @ shuffle Tetromino.defaults with
-    | h::t -> h, t
-    | _ -> failwith "Unexpected empty starting queue"
-  in
+  let queue = shuffle Tetromino.defaults in
   {
     score = 0;
     lines = 0;
@@ -83,15 +80,15 @@ let init (width:int) (height:int) (level:int) : t =
     fall_speed = -1;
     step_delta = 0;
     events = [];
-    queue = queue;
+    queue = List.tl queue;
     held = None;
     held_before = false;
-    falling = first;
+    falling = List.hd queue;
     falling_rot = -1;
     falling_pos = -1, -1;
     playfield = Array.make_matrix height width None
   }
-  |> drop first
+  |> drop (List.hd queue)
   |> recalculate_fall_speed
 
 let score (state:t) : int =
@@ -186,10 +183,8 @@ let step (state:t) : t =
          else ()
        done
      done);
-    drop (List.hd state.queue) 
-      {state with held_before = false;
-                  queue = List.tl state.queue; 
-                  step_delta = 0}
+    let state, next = next_piece state in
+    drop next { state with held_before = false; step_delta = 0; }
   end
 
 let update (state:t) (delta:int) (soft_drop:bool) : t =
@@ -216,25 +211,18 @@ let rotate (rotation:[`CCW | `CW]) (state:t) : t =
   test_rot state new_rot (Tetromino.wall_kicks state.falling rot rotation)
 
 let move (direction:[`Left | `Right]) (state:t) : t =
-  match direction with
-  | `Left -> if legal state (state.falling) state.falling_rot 
-      (fst state.falling_pos - 1,
-       snd state.falling_pos)
-    then {state with falling_pos = (fst state.falling_pos - 1,
-                                    snd state.falling_pos)}
-    else state
-  | `Right -> if legal state (state.falling) state.falling_rot 
-      (fst state.falling_pos + 1,
-       snd state.falling_pos)
-    then {state with falling_pos = (fst state.falling_pos + 1,
-                                    snd state.falling_pos)}
-    else state
+  let new_pos = match direction with
+    | `Left -> (fst state.falling_pos - 1, snd state.falling_pos)
+    | `Right -> (fst state.falling_pos + 1, snd state.falling_pos)
+  in if legal state state.falling state.falling_rot new_pos then 
+    { state with falling_pos = new_pos }
+  else state
 
 let hold (state:t) : t =
   match held state with
-  | None -> drop (List.hd state.queue) 
-              {state with held = Some state.falling;
-                          held_before = true; queue = List.tl state.queue}
+  | None ->
+    let state, next = next_piece state in
+    drop next { state with held = Some state.falling; held_before = true; }
   | Some p ->
     if state.held_before 
     then state
