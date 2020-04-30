@@ -54,8 +54,8 @@ let game_inputs_press
   | Menu -> ()
   | Move_left -> add k (State.move `Left, true)
   | Move_right -> add k (State.move `Right, true)
-  | Rotate_cw -> add k (State.rotate `CCW, false)
-  | Rotate_ccw -> add k (State.rotate `CW, false)
+  | Rotate_cw -> add k (State.rotate `CW, false)
+  | Rotate_ccw -> add k (State.rotate `CCW, false)
   | Soft_drop -> inputs.soft_drop <- k
   | Hard_drop -> add k (State.hard_drop, false)
   | Hold -> add k (State.hold, false)
