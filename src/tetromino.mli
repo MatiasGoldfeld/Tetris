@@ -1,28 +1,19 @@
-
-(* Invariant type to describe all the different tetromino pieces. *)
-type tetromino = 
-    I | J | L | O | S | T | Z
-
-
 (** The representation of a tetromino. *)
 type t
 
-(** [defaults] is a [t list] of possible tetromino shapes. *)
+(** [defaults] are the possible tetromino shapes. *)
 val defaults : t list
 
-(** [size t] is the bounding box of tetromino t. *)
+(** [size piece] is the bounding box of [piece]. *)
 val size : t -> int
-
-(** [color tet] is the color option of [tet] *)
-val color : t -> (int * int * int) option
 
 (** [max_size] is the maximum size of the default tetrominoes. *)
 val max_size : int
 
-(** [color tet] is the color option of [tet] *)
-val color : t -> (int * int * int) option
-
-(** [value tet rot x y] is a color option of the tetromino where [rot] is the
-    rotation from 0 to 3, [x] is the x coordinate, and [y] is the y 
-    coordinate. *)
+(** [value piece rot c r] is the grid value of [piece] where [rot] is the
+    rotation from 0 to 3, and [(c, r)] are the coordinates. *)
 val value : t -> int -> int -> int -> (int * int * int) option
+
+(** [wall_kicks piece rot dir] are the possible wall kick offsets of [piece]
+    when in [rot] and rotating [dir]. *)
+val wall_kicks : t -> int -> [`CCW | `CW] -> (int * int) list
