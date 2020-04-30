@@ -115,20 +115,18 @@ let legal state falling falling_rot falling_pos =
   let rec check_row col row =
     col >= Tetromino.size falling || (begin
         match Tetromino.value falling falling_rot col row with
+        | None -> true
         | Some x -> 
           let abs_col = fst falling_pos + col in
           let abs_row = snd falling_pos + row in
           abs_col >= 0 && abs_col < field_width state &&
           abs_row >= 0 && abs_row < field_height state &&
           state.playfield.(abs_row).(abs_col) = None
-        | None ->
-          true
       end && check_row (col + 1) row)
   in 
   let rec check_playfield col row =
     row >= Tetromino.size falling || begin
-      check_row col row && 
-      check_playfield col (row + 1)
+      check_row col row && check_playfield col (row + 1)
     end
   in check_playfield 0 0
 
@@ -145,7 +143,7 @@ let elem (state:t) (c:int) (r:int) =
     let fall_c, fall_r = state.falling_pos in
     let fall_rot = state.falling_rot in
     if c >= fall_c && c - fall_c < Tetromino.size state.falling then
-      match Tetromino.value tet fall_rot (c-fall_c) (r-fall_r) with
+      match Tetromino.value tet fall_rot (c - fall_c) (r - fall_r) with
       | Some color -> Falling (color, 255)
       | None ->
         let shadow_c, shadow_r = shadow_coordinates state fall_c fall_r in
@@ -166,7 +164,6 @@ let queue (state:t) : Tetromino.t list =
 
 let held (state:t) : Tetromino.t option =
   state.held
-
 
 (** [step state] is the [state] after the falling piece has stepped down. *)
 let step (state:t) : t =
@@ -202,66 +199,21 @@ let update (state:t) (delta:int) (soft_drop:bool) : t =
     step state
   else state
 
-let cw013 = [(0,0);(-1,0);(-1,1);(0,-2);(-1,-2)]
-let ccw103 = [(0,0);(1,0);(1,-1);(0,2);(1,2)]
-let cw123 = [(0,0);(1,0);(1,-1);(0,2);(1,2)]
-let ccw213 = [(0,0);(-1,0);(-1,1);(0,-2);(-1,-2)]
-let cw233 = [(0,0);(1,0);(1,1);(0,-2);(1,-2)]
-let ccw323 = [(0,0);(-1,0);(-1,-1);(0,2);(-1,2)]
-let cw303 = [(0,0);(-1,0);(-1,-1);(0,2);(-1,2)]
-let ccw033 = [(0,0);(1,0);(1,1);(0,-2);(1,-2)]
-
-let cw014 = [(0,0);(-2,0);(1,0);(-2,-1);(1,2)]
-let ccw104 = [(0,0);(2,0);(-1,0);(2,1);(-1,-2)]
-let cw124 = [(0,0);(-1,0);(2,0);(-1,2);(2,-1)]
-let ccw214 = [(0,0);(1,0);(-2,0);(1,-2);(-2,1)]
-let cw234 = [(0,0);(2,0);(-1,0);(2,1);(-1,-2)]
-let ccw324 = [(0,0);(-2,0);(1,0);(-2,-1);(1,2)]
-let cw304 = [(0,0);(1,0);(-2,0);(1,-2);(-2,1)]
-let ccw034 = [(0,0);(-1,0);(2,0);(-1,2);(2,-1)]
-
-let rec test_rot state attempted_rot list =
+let rec test_rot state check_rot list =
   match list with
   | [] -> state
-  | h::t -> if legal state state.falling attempted_rot 
-      (fst h + fst state.falling_pos, snd h + snd state.falling_pos)
-    then {state with falling_rot = attempted_rot; 
-                     falling_pos = fst h + fst state.falling_pos, 
-                                   snd h + snd state.falling_pos}
-    else test_rot state attempted_rot t
+  | (x, y)::t ->
+    let check_pos = (x + fst state.falling_pos, y + snd state.falling_pos) in
+    print_newline ();
+    if legal state state.falling check_rot check_pos then
+      { state with falling_rot = check_rot; 
+                   falling_pos = check_pos; }
+    else test_rot state check_rot t
 
 let rotate (rotation:[`CCW | `CW]) (state:t) : t =
-  let size = Tetromino.size state.falling in
   let rot = state.falling_rot in
-  if size = 2 
-  then state
-  else
-    match rotation with
-    | `CW when rot = 0 -> if size = 3
-      then test_rot state 1 cw013
-      else test_rot state 1 cw014
-    | `CW when rot = 1 -> if size = 3
-      then test_rot state 2 cw123
-      else test_rot state 2 cw124
-    | `CW when rot = 2 -> if size = 3
-      then test_rot state 3 cw233
-      else test_rot state 3 cw234
-    | `CW when rot = 3 -> if size = 3
-      then test_rot state 0 cw303
-      else test_rot state 0 cw304
-    | `CCW when rot = 0 -> if size = 3
-      then test_rot state 3 ccw033
-      else test_rot state 3 ccw034
-    | `CCW when rot = 1 -> if size = 3
-      then test_rot state 0 ccw103
-      else test_rot state 0 ccw104
-    | `CCW when rot = 2 -> if size = 3
-      then test_rot state 1 ccw213
-      else test_rot state 1 ccw214
-    | `CCW when rot = 3 -> if size = 3
-      then test_rot state 2 ccw323
-      else test_rot state 2 ccw324
-    | _ -> failwith "impossible rotation"
+  let new_rot = (rot + match rotation with `CCW -> 3 | `CW -> 1) mod 4 in
+  test_rot state new_rot (Tetromino.wall_kicks state.falling rot rotation)
 
 let move (direction:[`Left | `Right]) (state:t) : t =
   match direction with

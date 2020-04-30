@@ -1,4 +1,6 @@
-type wall_kicks = {
+type color = int * int * int
+
+type wall_kicks_t = {
   cw : (int * int) list;
   ccw : (int * int) list;
 }
@@ -26,12 +28,12 @@ let wall_kicks_4 = [|
 |]
 
 type t = {
-  color : int * int * int;
+  color : color;
   shape : int list list;
-  wall_kicks : wall_kicks array;
+  wall_kicks : wall_kicks_t array;
 }
 
-let defaults = [
+let defaults : t list = [
   { (* i tetromino *)
     color = (0, 255, 255);
     shape = [[0;0;0;0];[1;1;1;1];[0;0;0;0];[0;0;0;0]];
@@ -72,39 +74,33 @@ let defaults = [
 let size (piece:t) : int =
   List.length piece.shape
 
-let max_size =
+let max_size : int =
   List.map size defaults
   |> List.fold_left max 0
 
-let pi = 4. *. atan 1.
-
-let rec iterator x y piece_list : int =
-  match piece_list with
-  | [] -> failwith "List should really not be empty, lol. How'd you get here?"
-  | k::t when y > 0 -> iterator x (y-1) t
-  | k::t -> begin match k with
-      | h::e when x > 0 -> iterator (x-1) y (e::t)
-      | h::e -> h
-      | _ -> failwith "How'd you get here?"
-    end
-
 (** [find_coord_val] is the value in a 2d list of ints at that coordinate 
     point according to a certain rotation of the 2d list. *)
-let find_coord_val rot x y piece = 
-  let change = (Float.of_int (size piece-1)) /. 2. in
-  let new_x = ((((Float.of_int x) -. change) *. 
-                (cos (pi /. 2. *. Float.of_int rot)) 
-                -. ((Float.of_int y) -. change) *. 
-                   (sin (pi /. 2. *. Float.of_int rot)) +. change) +. 0.5) 
+let find_coord_val (piece:t) (rot:int) (x:int) (y:int) : color option = 
+  let rot = Float.of_int rot in
+  let x, y = Float.of_int x, Float.of_int y in
+  let change = Float.of_int (size piece - 1) /. 2. in
+  let new_x = ((x -. change) *. (cos (Float.pi /. -2. *. rot)) -.
+               (y -. change) *. (sin (Float.pi /. -2. *. rot)) +. change) +. 0.5
               |> Float.to_int in
-  let new_y = ((((Float.of_int y) -. change) *. 
-                (cos (pi /. 2. *. Float.of_int rot)) 
-                +. ((Float.of_int x) -. change) *. 
-                   (sin (pi /. 2. *. Float.of_int rot)) +. change) +. 0.5) 
+  let new_y = ((y -. change) *. (cos (Float.pi /. -2. *. rot)) +.
+               (x -. change) *. (sin (Float.pi /. -2. *. rot)) +. change) +. 0.5
               |> Float.to_int in
-  if iterator new_x new_y piece.shape = 1 then Some piece.color else None
+  let row = List.nth piece.shape new_y in
+  match List.nth row new_x with
+  | 1 -> Some piece.color
+  | _ -> None
 
-let value t rot column row = 
-  let s = size t in
-  if (column >= s || column < 0 || row >= s || row < 0) then None
-  else find_coord_val rot column row t
+let value (piece:t) (rot:int) (col:int) (row:int) : color option = 
+  let s = size piece in
+  if col >= s || col < 0 || row >= s || row < 0 then None
+  else find_coord_val piece rot col row
+
+let wall_kicks (piece:t) (rot:int) (dir:[`CCW | `CW]) : (int * int) list =
+  match dir with
+  | `CCW -> piece.wall_kicks.(rot).ccw
+  | `CW -> piece.wall_kicks.(rot).cw
