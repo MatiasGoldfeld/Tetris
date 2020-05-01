@@ -53,6 +53,16 @@ let draw_tetromino (ctx:t) (piece:Tetromino.t) (rot:int) (surf:Sdl.surface)
     (x:int) (y:int) (size:int) : unit =
   ()
 
+(**  [render_duck ctx image_path rect] draws a duck (based on the image at 
+     [image_path]) on this [rect] in graphics contect [ctx] *)
+let render_duck_image (ctx:t) (image_path:string) (rect:Sdl.rect) =
+  let surface = Sdl.load_bmp image_path
+                |> unpack "failed to load image" in
+  let texture = Sdl.create_texture_from_surface ctx.renderer surface 
+                |> unpack "failed to make texture" in
+  Sdl.render_copy ~dst:rect ctx.renderer texture  
+  |> unpack "failed to render texture"
+
 
 (** [draw_playfield ctx state pos size] is the rendered playfield of [state]
     at [pos]with a tile length of [size] in graphics context [ctx]. *)
@@ -71,8 +81,9 @@ let draw_playfield (ctx:t) (state:State.t) (x,y:int*int) (size:int) : unit =
         set_color color ctx;
         fill_rect rect ctx
       | State.Falling (color, a) | State.Ghost (color, a) ->
-        set_color color ~a:a ctx;
-        fill_rect rect ctx
+        (*set_color color ~a:a ctx;
+          fill_rect rect ctx*)
+        render_duck_image ctx "/resources/images/duck1.bmp" rect;
       | State.Empty -> ()
     done
   done;
