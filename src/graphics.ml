@@ -15,7 +15,7 @@ let unpack (message:string) (result:'a Sdl.result) : 'a =
 
 (** [set_color color alpha ctx] sets the render color of [ctx] to [color] and
     [alpha], with a default of 255 (opaque). *)
-let set_color (r,g,b:int*int*int) ?(a:int=255) (ctx:t): unit =
+let set_color (r, g, b:int * int * int) ?(a:int=255) (ctx:t): unit =
   Sdl.set_render_draw_color ctx.renderer r g b a |> ignore
 
 (** [fill_rect rect ctx] fills [rect] using [ctx]. *)
@@ -41,9 +41,9 @@ let init () : t =
   Sdl.(set_render_draw_blend_mode renderer Blend.mode_blend)
   |> unpack "Error setting renderer blend mode";
   {
-    window=window;
-    renderer=renderer;
-    pixel_format=pixel_format;
+    window = window;
+    renderer = renderer;
+    pixel_format = pixel_format;
   }
 
 (** [draw_tetromino ctx piece rot surf x y size] draws [piece] at [rot] in
