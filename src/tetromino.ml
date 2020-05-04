@@ -1,11 +1,21 @@
+(** [color] is the RGB representation of the color of a tetromino. *)
 type color = int * int * int
 
+(** [wall_kicks_t] contains the data for how wall kicks work for a particular
+    shape, rotation, and direction. *)
 type wall_kicks_t = {
   cw : (int * int) list;
   ccw : (int * int) list;
 }
 
-let wall_kicks_3 = [|
+(** [wall_kicks_static] is the set of empty wall kicks for shapes that do not
+    rotate, like the O-tetromino.*)
+let wall_kicks_static : wall_kicks_t array =
+  let empty = { ccw = []; cw = []; } in
+  [| empty; empty; empty; empty; |]
+
+(** [wall_kicks_3] is the set of all wall kick data for size 3 shapes. *)
+let wall_kicks_3 : wall_kicks_t array = [|
   { ccw = [(0,0); (-1,0); (-1, 1); ( 0,-2); (-1,-2)]; 
     cw =  [(0,0); (-2,0); ( 1, 0); (-2,-1); ( 1, 2)]; };
   { ccw = [(0,0); ( 1,0); ( 1,-1); ( 0, 2); ( 1, 2)]; 
@@ -16,7 +26,8 @@ let wall_kicks_3 = [|
     cw =  [(0,0); (-1,0); (-1,-1); ( 0, 2); (-1, 2)]; };
 |]
 
-let wall_kicks_4 = [|
+(** [wall_kicks_3] is the set of all wall kick data for size 4 shapes. *)
+let wall_kicks_4 : wall_kicks_t array = [|
   { ccw = [(0,0); (-1,0); ( 2,0); (-1, 2); ( 2,-1)]; 
     cw =  [(0,0); (-2,0); ( 1,0); (-2,-1); ( 1, 2)]; };
   { ccw = [(0,0); ( 2,0); (-1,0); ( 2, 1); (-1,-2)]; 
@@ -52,7 +63,7 @@ let defaults : t list = [
   { (* o tetromino *)
     color = (255, 255, 0);
     shape = [[1;1];[1;1]];
-    wall_kicks = wall_kicks_3;
+    wall_kicks = wall_kicks_static;
   };
   { (* s tetromino *)
     color = (0, 128, 0);
