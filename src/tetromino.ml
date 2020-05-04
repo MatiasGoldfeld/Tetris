@@ -26,7 +26,7 @@ let wall_kicks_3 : wall_kicks_t array = [|
     cw =  [(0,0); (-1,0); (-1,-1); ( 0, 2); (-1, 2)]; };
 |]
 
-(** [wall_kicks_3] is the set of all wall kick data for size 4 shapes. *)
+(** [wall_kicks_4] is the set of all wall kick data for size 4 shapes. *)
 let wall_kicks_4 : wall_kicks_t array = [|
   { ccw = [(0,0); (-1,0); ( 2,0); (-1, 2); ( 2,-1)]; 
     cw =  [(0,0); (-2,0); ( 1,0); (-2,-1); ( 1, 2)]; };
