@@ -5,19 +5,28 @@ let main () =
   | Error (`Msg e) -> Sdl.log "Main init error: %s" e; exit 1
   | Ok () ->
     let audio = Audio.init "./resources/audio/" in
-    let graphics = Graphics.init true in
+    let graphics = Graphics.init true "./resources/"  in
     Audio.adjust_music audio 0.05;
-    let game_controls = [
-      (Sdl.K.left, Game.Move_left);
-      (Sdl.K.right, Game.Move_right);
-      (Sdl.K.up, Game.Rotate_cw);
-      (Sdl.K.z, Game.Rotate_ccw);
-      (Sdl.K.x, Game.Rotate_cw);
-      (Sdl.K.down, Game.Soft_drop);
-      (Sdl.K.space, Game.Hard_drop);
-      (Sdl.K.c, Game.Hold);
+    let menu_controls = [
+      (Sdl.K.escape,   Game.MMenu);
+      (Sdl.K.left,     Game.MLeft);
+      (Sdl.K.right,    Game.MRight);
+      (Sdl.K.up,       Game.MUp);
+      (Sdl.K.down,     Game.MDown);
+      (Sdl.K.kp_enter, Game.MEnter);
     ] in
-    Game.init 1 [] game_controls audio graphics;
+    let game_controls = [
+      (Sdl.K.escape, Game.GMenu);
+      (Sdl.K.left,   Game.GLeft);
+      (Sdl.K.right,  Game.GRight);
+      (Sdl.K.up,     Game.GCW);
+      (Sdl.K.z,      Game.GCCW);
+      (Sdl.K.x,      Game.GCW);
+      (Sdl.K.down,   Game.GSoft);
+      (Sdl.K.space,  Game.GHard);
+      (Sdl.K.c,      Game.GHold);
+    ] in
+    Game.init 1 menu_controls game_controls audio graphics;
     Sdl.quit ();
     exit 0
 

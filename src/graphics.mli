@@ -1,9 +1,9 @@
 (** The representation of the graphics context used to display and render. *)
 type t
 
-(** [init duck_mode ] initializes the graphics system, giving a graphics context.
+(** [init duck_mode path ] initializes the graphics system, giving a graphics context.
     Should be called once before graphics is outputed. *)
-val init : bool -> t
+val init : bool -> string -> t
 
 (** [render ctx state] provides a graphical representation of [state] using
     graphics context [ctx]. *)

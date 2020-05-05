@@ -4,6 +4,9 @@ type t
 (** [init path] is the audio files contained at [path]. *)
 val init : string -> t
 
+(** [loop_music audio ] restarts music if it's been paused *)
+val loop_music: t -> unit
+
 (** [play_sound audio e] plays the sound triggered by [e] using [audio]. *)
 val play_sound : t -> State.event -> unit
 

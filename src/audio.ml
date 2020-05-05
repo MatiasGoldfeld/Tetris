@@ -48,5 +48,9 @@ let start_music (audio:t) : unit =
 let stop_music (audio:t) : unit =
   Mixer.pause_music ()
 
+let loop_music audio = 
+  if Mixer.playing_music () then ()
+  else start_music audio
+
 let quit (audio:t) : unit=
   Mixer.quit ()
