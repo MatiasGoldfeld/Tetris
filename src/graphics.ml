@@ -1,5 +1,6 @@
 open Tsdl
 open Tsdl_ttf
+open Tsdl_image
 
 type duck_image = (State.color * Tsdl.Sdl.texture)
 
@@ -53,8 +54,9 @@ let render_square (rect:Sdl.rect) (ctx:t) (color:State.color) : unit =
 let fill_coords (x:int) (y:int) (w:int) (h:int) (ctx:t) : unit = 
   let rect = Sdl.Rect.create x y w h in fill_rect rect ctx
 
-let create_duck_texture (renderer:Sdl.renderer) (image_path:string) : Tsdl.Sdl.texture= 
-  let surface = Sdl.load_bmp image_path
+let create_duck_texture (renderer:Sdl.renderer) 
+    (image_path:string) : Tsdl.Sdl.texture= 
+  let surface = (Tsdl_image.Image.load image_path) 
                 |> unpack "failed to load image" in
   Sdl.create_texture_from_surface renderer surface 
   |> unpack "failed to make texture"
@@ -66,7 +68,7 @@ let rec duck_path_dict
     (count:int) : duck_image list = 
   match colors with 
   | h::t -> 
-    let texture = (path^"/images/duck"^(string_of_int count)^".bmp" 
+    let texture = (path^"/images/duck"^(string_of_int count)^".jpg" 
                    |> create_duck_texture renderer) in
     (h,texture)::(duck_path_dict path renderer t (count+1))
   | [] -> []

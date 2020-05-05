@@ -1,5 +1,5 @@
 MODULES=audio game graphics main state tetromino
-PKGS=tsdl, tsdl_mixer, tsdl_ttf
+PKGS=tsdl,tsdl_mixer,tsdl_ttf,tsdl_image
 SRC=src/
 PATHS=$(addprefix $(SRC), $(MODULES))
 OBJECTS=$(PATHS:=.cmo)
