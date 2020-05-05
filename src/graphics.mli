@@ -1,9 +1,10 @@
 (** The representation of the graphics context used to display and render. *)
 type t
 
-(** [init] initializes the graphics system, giving a graphics context.
+(** [init path] initializes the graphics system with the [path] to the resources
+    folder, giving a graphics context.
     Should be called once before graphics is outputed. *)
-val init : unit -> t
+val init : string -> t
 
 (** [render ctx state] provides a graphical representation of [state] using
     graphics context [ctx]. *)
