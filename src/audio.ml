@@ -41,16 +41,23 @@ let adjust_music (audio:t) (volume:float) : unit =
   |> ignore
 
 let start_music (audio:t) : unit =
+<<<<<<< HEAD
   Mixer.play_music audio.music 1
+=======
+  Mixer.play_music audio.music (-1)
+>>>>>>> 956a9303065f1c4eadee218d0bdd1a7c09481f05
   |> unpack "Failed to play music"
   |> ignore
 
 let stop_music (audio:t) : unit =
   Mixer.pause_music ()
 
+<<<<<<< HEAD
 let loop_music audio = 
   if Mixer.playing_music () then ()
   else start_music audio
 
+=======
+>>>>>>> 956a9303065f1c4eadee218d0bdd1a7c09481f05
 let quit (audio:t) : unit=
   Mixer.quit ()
