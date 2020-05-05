@@ -88,10 +88,7 @@ let rec handle_events (game:t) : t =
     end
 
 let rec loop (game:t) : unit =
-<<<<<<< HEAD
   Audio.loop_music game.audio;
-=======
->>>>>>> 956a9303065f1c4eadee218d0bdd1a7c09481f05
   let game = handle_events game in
   let time = Int32.to_int (Sdl.get_ticks ()) in
   let delta = (time - game.last_update) in
