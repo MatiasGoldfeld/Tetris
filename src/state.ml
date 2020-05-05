@@ -168,9 +168,11 @@ let rec fill_in_rows state height =
 let rec clear_lines_helper state height =
   if height >= 0 then begin
     if (check_row state.playfield.(height))
-    then 
+    then
       (fill_in_rows state height;
-       clear_lines_helper state height)
+       let new_state = {state with lines = state.lines + 1; 
+                                   level = 1 + (state.lines/10)} in
+       clear_lines_helper new_state height)
     else clear_lines_helper state (height - 1)
   end
   else state
