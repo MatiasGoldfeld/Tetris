@@ -168,9 +168,12 @@ let rec fill_in_rows state height =
 let rec clear_lines_helper state height =
   if height >= 0 then begin
     if (check_row state.playfield.(height))
-    then 
+    then
       (fill_in_rows state height;
-       clear_lines_helper {state with lines = state.lines + 1} height)
+       let new_state =
+         { state with lines = state.lines + 1;
+                      level = max state.level (1 + (state.lines + 1) / 10) } in
+       clear_lines_helper new_state height)
     else clear_lines_helper state (height - 1)
   end
   else state
@@ -189,8 +192,7 @@ let place_piece state pos_x pos_y =
       else ()
     done
   done;
-  let new_state = state |> clear_lines |> drop in
-  { new_state with level = max new_state.level (1 + new_state.lines / 10) }
+  drop (clear_lines state)
 
 let rec shadow_coordinates_helper state column row =
   if legal state state.falling state.falling_rot (column, row)
