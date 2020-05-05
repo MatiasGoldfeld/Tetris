@@ -113,7 +113,8 @@ let draw_queue (ctx:t) (state:State.t) (size:int) (n:int) (x,y:int*int) : unit =
   let rec draw_next pos = function
     | [] -> failwith "Missing tetromino while drawing queue"
     | piece::t ->
-      draw_tetromino ctx piece 0 (x + border) (y + border + size * 4 * pos) size;
+      draw_tetromino ctx piece 0
+        (x + border) (y + border + size * 4 * pos) size;
       if pos + 1 < n
       then draw_next (pos + 1) t
       else ()
@@ -142,12 +143,13 @@ let draw_game_info (ctx:t) (state:State.t) (size:int) (x,y:int*int) : unit =
   let bg = let r, g, b = ctx.bg_color in Sdl.Color.create r g b 255 in
   let fg = Sdl.Color.create 200 200 200 255 in
   let t_score = "Score: " ^ Int.to_string (State.score state) in
-  let t_time = "Time: " ^ "idk" in
+  let t_time  = "Time: " ^ "idk" in
   let t_lines = "Lines: " ^ Int.to_string (State.lines state) in
   let t_level = "Level: " ^ Int.to_string (State.level state) in
   let x_offset, y_offset = size, size * 8 in
   let f_border = size / 10 in
-  let f_x, f_y, f_w, f_h = x + size * 3 / 2, y + size * 3 / 2, size * 5, size * 5 in
+  let f_x, f_y, f_w, f_h =
+    x + size * 3 / 2, y + size * 3 / 2, size * 5, size * 5 in
   let f_out = Sdl.Rect.create (f_x - f_border) (f_y - f_border)
       (f_w + f_border * 2) (f_h + f_border * 2) in
   let f_in = Sdl.Rect.create f_x f_y f_w f_h in
@@ -155,7 +157,8 @@ let draw_game_info (ctx:t) (state:State.t) (size:int) (x,y:int*int) : unit =
   set_color (100, 100, 100) ctx; fill_rect f_in ctx;
   begin match State.held state with
     | None -> ()
-    | Some piece -> draw_tetromino ctx piece 0 (x + size * 2) (y + size * 2) size
+    | Some piece ->
+      draw_tetromino ctx piece 0 (x + size * 2) (y + size * 2) size
   end;
   draw_text ctx size t_score fg bg (x + x_offset, y + y_offset);
   draw_text ctx size t_time  fg bg (x + x_offset, y + y_offset + size * 2);
@@ -178,5 +181,6 @@ let render (ctx:t) (state:State.t) : unit =
   Sdl.render_present ctx.renderer;
   (* The start variable and the following are temp perf testing code *)
   let x, y = Sdl.get_window_size ctx.window in
-  Printf.printf "Render time: %lims %ix%i" (Int32.sub (Sdl.get_ticks ()) start) x y;
+  Printf.printf "Render time: %lims %ix%i"
+    (Int32.sub (Sdl.get_ticks ()) start) x y;
   print_newline ()

@@ -170,7 +170,7 @@ let rec clear_lines_helper state height =
     if (check_row state.playfield.(height))
     then 
       (fill_in_rows state height;
-       clear_lines_helper state height)
+       clear_lines_helper {state with lines = state.lines + 1} height)
     else clear_lines_helper state (height - 1)
   end
   else state
@@ -189,10 +189,8 @@ let place_piece state pos_x pos_y =
       else ()
     done
   done;
-  let new_state = clear_lines state in
-  drop new_state
-
-
+  let new_state = state |> clear_lines |> drop in
+  { new_state with level = max new_state.level (1 + new_state.lines / 10) }
 
 let rec shadow_coordinates_helper state column row =
   if legal state state.falling state.falling_rot (column, row)
@@ -219,8 +217,8 @@ let value (state:t) (c:int) (r:int) : v =
         | Some color -> Falling (color, 255)
         | None ->
           let shadow_c, shadow_r = shadow_coordinates state in
-          match Tetromino.value tet fall_rot shadow_c shadow_r with
-          | Some color -> Ghost (color, 100)
+          match Tetromino.value tet fall_rot (c - shadow_c) (r - shadow_r) with
+          | Some color -> Ghost (color, 95)
           | None -> Empty
       else
         Empty
