@@ -1,14 +1,18 @@
 open Tsdl
 open Tsdl_ttf
+     <<<<<<< HEAD
 open Tsdl_image
 
 type duck_image = (State.color * Tsdl.Sdl.texture)
+                  =======
+                  >>>>>>> 956a9303065f1c4eadee218d0bdd1a7c09481f05
 
 type t = {
   window : Sdl.window;
   renderer : Sdl.renderer;
   pixel_format : Sdl.pixel_format;
-  duck_mode: bool;
+  <<<<<<< HEAD
+    duck_mode: bool;
   duck_images : duck_image list;
   bg_color : State.color;
   font : Ttf.font;
@@ -17,6 +21,12 @@ type t = {
 let tet_types = ["i";"j";"l";"o";"s";"z";"t"]
 
 
+                =======
+                bg_color : int * int * int;
+  font : Ttf.font;
+}
+
+>>>>>>> 956a9303065f1c4eadee218d0bdd1a7c09481f05
 (** [unpack message result] is [value] if [result] is [Ok value]. Otherwise, it
     logs [message] along with the error, and exits the program. *)
 let unpack (message:string) (result:'a Sdl.result) : 'a =
@@ -89,12 +99,18 @@ let init (duck_mode:bool) (path:string) : t =
   |> unpack "Error setting renderer blend mode";
   Sdl.set_window_minimum_size window ~w:660 ~h:600;
   {
-    window=window;
+    <<<<<<< HEAD
+      window=window;
     renderer=renderer;
     pixel_format=pixel_format;
     duck_mode=duck_mode;
     duck_images = duck_path_dict path renderer Tetromino.colors 1;
-    bg_color = (80, 80, 80);
+    =======
+    window = window;
+    renderer = renderer;
+    pixel_format = pixel_format;
+    >>>>>>> 956a9303065f1c4eadee218d0bdd1a7c09481f05
+      bg_color = (80, 80, 80);
     font = Ttf.open_font (path ^ "fonts/PTS55F.ttf") 60
            |> unpack "Failed loading font";
   }
@@ -130,13 +146,19 @@ let draw_playfield (ctx:t) (state:State.t) (x,y:int*int) (size:int) : unit =
       let rect = Sdl.Rect.create (x + col * size) (y + row * size) size size in
       match State.value state col row with
       | State.Static color ->
-        (*set_color color ctx;
-          fill_rect rect ctx*)
-        render_square rect ctx color
+        <<<<<<< HEAD
+          (*set_color color ctx;
+            fill_rect rect ctx*)
+          render_square rect ctx color
       | State.Falling (color, a) ->
         render_square rect ctx color
       | State.Ghost (color, a) ->
-        set_color color ~a:a ctx;
+        =======
+        set_color color ctx;
+        fill_rect rect ctx
+      | State.Falling (color, a) | State.Ghost (color, a) ->
+        >>>>>>> 956a9303065f1c4eadee218d0bdd1a7c09481f05
+          set_color color ~a:a ctx;
         fill_rect rect ctx
       | State.Empty -> ()
     done
