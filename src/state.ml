@@ -27,6 +27,7 @@ type t = {
   falling_rot : int;
   (* The (c, r) position of the falling tetromino. *)
   falling_pos : int * int;
+  ghost_row : int;
   (* The array of rows, with 0 representing the top row. The columns are arrays
      of color options, with 0 representing the left column. Only blocks already
      placed on the playfield are represented here. *)
@@ -93,25 +94,31 @@ let next_piece (state:t) : t =
                held_before = false
   }
 
+(** [update_ghost state] is [state] with the falling tetromino's ghost row
+    updates. *)
+let rec update_ghost (state:t) : t =
+  let col, start_row = state.falling_pos in
+  let rec helper row =
+    if legal state state.falling state.falling_rot (col, row)
+    then helper (row + 1)
+    else { state with ghost_row = row - 1 }
+  in helper (start_row + 1)
 
 let drop_help state =
   let column = 5 - (Tetromino.size state.falling / 2) in
   if legal state state.falling state.falling_rot (column, 0)
-  then {state with falling_pos = (column, 0)}
+  then {state with falling_pos = (column, 0)} |> update_ghost
   else begin
     if legal state state.falling state.falling_rot (column, -1)
-    then {state with falling_pos = (column, -1)}
+    then {state with falling_pos = (column, -1)} |> update_ghost
     else failwith "gameover"
   end
-
-
 
 (** [drop piece state] is the [state] with a new piece initialized as the 
     falling piece on the top of the playfield. *)
 let drop (state:t) : t = 
   let new_state = next_piece state in
   drop_help new_state
-
 
 (** [recalculate_fall_speed state] is [state] with the fall speed adjusted to
     current level. *)
@@ -139,12 +146,11 @@ let init (width:int) (height:int) (level:int) : t =
     falling = List.hd queue;
     falling_rot = -1;
     falling_pos = -1, -1;
+    ghost_row = -1;
     playfield = Array.make_matrix height width None
   }
   |> drop
   |> recalculate_fall_speed
-
-
 
 let row_full acc item =
   match item with
@@ -165,7 +171,6 @@ let rec fill_in_rows state height =
         fill_in_rows state (height - 1))
   else state.playfield.(height) <- Array.make (field_width state) None
 
-
 let rec clear_lines_helper state height =
   if height >= 0 then begin
     if (check_row state.playfield.(height))
@@ -182,7 +187,6 @@ let rec clear_lines_helper state height =
 let clear_lines state =
   clear_lines_helper state (field_height state - 1)
 
-
 let place_piece state pos_x pos_y =
   for col = pos_x to pos_x + (Tetromino.size state.falling - 1) do
     for row = pos_y to pos_y + (Tetromino.size state.falling - 1) do 
@@ -195,17 +199,6 @@ let place_piece state pos_x pos_y =
   done;
   drop (clear_lines state)
 
-let rec shadow_coordinates_helper state column row =
-  if legal state state.falling state.falling_rot (column, row)
-  then shadow_coordinates_helper state column (row + 1)
-  else (column, row - 1)
-
-(** TODO: Document/fix this boi *)
-let rec shadow_coordinates state =
-  let column, row = state.falling_pos in
-  shadow_coordinates_helper state column row
-
-
 let value (state:t) (c:int) (r:int) : v =
   if r < 0 || c < 0 || r >= field_height state || c >= field_width state
   then raise (InvalidCoordinates ((string_of_int c) ^", " ^ (string_of_int r)))
@@ -216,11 +209,11 @@ let value (state:t) (c:int) (r:int) : v =
       let fall_c, fall_r = state.falling_pos in
       let fall_rot = state.falling_rot in
       if c >= fall_c && c - fall_c < Tetromino.size state.falling then
-        match Tetromino.value tet fall_rot (c - fall_c) (r - fall_r) with
+        let check = Tetromino.value tet fall_rot (c - fall_c) in
+        match check (r - fall_r) with
         | Some color -> Falling (color, 255)
         | None ->
-          let shadow_c, shadow_r = shadow_coordinates state in
-          match Tetromino.value tet fall_rot (c - shadow_c) (r - shadow_r) with
+          match check (r - state.ghost_row) with
           | Some color -> Ghost (color, 95)
           | None -> Empty
       else
@@ -257,6 +250,7 @@ let rotate (rotation:[`CCW | `CW]) (state:t) : t =
       if legal state state.falling new_rot check_pos then
         { state with falling_rot = new_rot; 
                      falling_pos = check_pos; }
+        |> update_ghost
       else test_rot t
   in test_rot (Tetromino.wall_kicks state.falling rot rotation)
 
@@ -266,6 +260,7 @@ let move (direction:[`Left | `Right]) (state:t) : t =
     | `Right -> fst state.falling_pos + 1, snd state.falling_pos
   in if legal state state.falling state.falling_rot new_pos then 
     { state with falling_pos = new_pos }
+    |> update_ghost
   else state
 
 
@@ -286,8 +281,7 @@ let hold (state:t) : t =
     else hold_drop {state with held = Some state.falling; held_before = true} p
 
 let hard_drop (state:t) : t =
-  let column, row = shadow_coordinates state in
-  place_piece state column row
+  place_piece state (fst state.falling_pos) state.ghost_row
 
 let handle_events (f:event -> unit) (state:t) : t =
   List.iter f (List.rev state.events);
