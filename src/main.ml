@@ -5,7 +5,7 @@ let main () =
   | Error (`Msg e) -> Sdl.log "Main init error: %s" e; exit 1
   | Ok () ->
     let audio = Audio.init "./resources/audio/" in
-    let graphics = Graphics.init () in
+    let graphics = Graphics.init "./resources/" in
     Audio.adjust_music audio 0.05;
     let game_controls = [
       (Sdl.K.left, Game.Move_left);
