@@ -44,6 +44,7 @@ let init (path:string) : t =
     |> unpack "Create renderer error" in
   Sdl.(set_render_draw_blend_mode renderer Blend.mode_blend)
   |> unpack "Error setting renderer blend mode";
+  Sdl.set_window_minimum_size window ~w:660 ~h:600;
   {
     window = window;
     renderer = renderer;
@@ -69,7 +70,6 @@ let draw_tetromino (ctx:t) (piece:Tetromino.t) (rot:int) (x:int) (y:int)
         fill_coords (x + off + col * size) (y + off + row * size) size size ctx;
     done
   done
-
 
 (** [draw_playfield ctx state pos size] renders the playfield of [state]
     at [pos]with a tile length of [size] in graphics context [ctx]. *)
@@ -119,9 +119,10 @@ let draw_queue (ctx:t) (state:State.t) (size:int) (n:int) (x,y:int*int) : unit =
       else ()
   in draw_next 0 (State.queue state)
 
-(** [draw_text ctx text fg bg pos] draws [text] at coordinates [pos] using
-    [ctx], with a foreground color of [fg] and a background color of [bg]. *)
-let draw_text (ctx:t) (text:string) (fg:Sdl.color) (bg:Sdl.color)
+(** [draw_text ctx size text fg bg pos] draws [text] with size [size] at
+    coordinates [pos] using [ctx], with a foreground color of [fg] and a
+    background color of [bg]. *)
+let draw_text (ctx:t) (size:int) (text:string) (fg:Sdl.color) (bg:Sdl.color)
     (x,y:int*int) : unit =
   let score = Ttf.render_text_shaded ctx.font text fg bg
               |> unpack "Failed to render TTF"
@@ -129,6 +130,7 @@ let draw_text (ctx:t) (text:string) (fg:Sdl.color) (bg:Sdl.color)
               |> unpack "Failed to create texture from font surface" in
   let _, _, (score_w, score_h) = Sdl.query_texture score
                                  |> unpack "Failed to query texture" in
+  let score_w, score_h = score_w * size / 60, score_h * size / 60 in
   let score_rect = Sdl.Rect.create x y score_w score_h in
   Sdl.render_copy ~dst:score_rect ctx.renderer score
   |> unpack "Failed to copy text texture onto screen"
@@ -143,19 +145,26 @@ let draw_game_info (ctx:t) (state:State.t) (size:int) (x,y:int*int) : unit =
   let t_time = "Time: " ^ "idk" in
   let t_lines = "Lines: " ^ Int.to_string (State.lines state) in
   let t_level = "Level: " ^ Int.to_string (State.level state) in
-  let x_offset, y_offset, y_gap = 25, size * 5, 90 in
+  let x_offset, y_offset = size, size * 8 in
+  let f_border = size / 10 in
+  let f_x, f_y, f_w, f_h = x + size * 3 / 2, y + size * 3 / 2, size * 5, size * 5 in
+  let f_out = Sdl.Rect.create (f_x - f_border) (f_y - f_border)
+      (f_w + f_border * 2) (f_h + f_border * 2) in
+  let f_in = Sdl.Rect.create f_x f_y f_w f_h in
+  set_color (31, 31, 31) ctx; fill_rect f_out ctx;
+  set_color (100, 100, 100) ctx; fill_rect f_in ctx;
   begin match State.held state with
     | None -> ()
-    | Some piece -> draw_tetromino ctx piece 0 (x + size) (y + size) size
+    | Some piece -> draw_tetromino ctx piece 0 (x + size * 2) (y + size * 2) size
   end;
-  draw_text ctx t_score fg bg (x + x_offset, y + y_offset);
-  draw_text ctx t_time  fg bg (x + x_offset, y + y_offset + y_gap);
-  draw_text ctx t_lines fg bg (x + x_offset, y + y_offset + y_gap * 2);
-  draw_text ctx t_level fg bg (x + x_offset, y + y_offset + y_gap * 3)
+  draw_text ctx size t_score fg bg (x + x_offset, y + y_offset);
+  draw_text ctx size t_time  fg bg (x + x_offset, y + y_offset + size * 2);
+  draw_text ctx size t_lines fg bg (x + x_offset, y + y_offset + size * 4);
+  draw_text ctx size t_level fg bg (x + x_offset, y + y_offset + size * 6)
 
 let render (ctx:t) (state:State.t) : unit =
   let start = Sdl.get_ticks () in
-  let w_desire, h_desire = 16 + 6, 20 in
+  let w_desire, h_desire = 24, 20 in
   let w_true, h_true = Sdl.get_window_size ctx.window in
   let size = min (w_true / w_desire) (h_true / h_desire) in
   let x_offset = (w_true - w_desire * size + 1) / 2 in
@@ -164,9 +173,10 @@ let render (ctx:t) (state:State.t) : unit =
   set_color ctx.bg_color ctx;
   Sdl.render_clear ctx.renderer |> unpack "Failed to clear renderer";
   draw_game_info ctx state size (x_offset, y_offset);
-  draw_playfield ctx state (x_offset + 6 * size, y_offset) size;
-  draw_queue ctx state size 5 (x_offset + field_width + 6 * size, y_offset);
+  draw_playfield ctx state (x_offset + 8 * size, y_offset) size;
+  draw_queue ctx state size 5 (x_offset + field_width + 8 * size, y_offset);
   Sdl.render_present ctx.renderer;
   (* The start variable and the following are temp perf testing code *)
-  Printf.printf "Render time: %lims" (Int32.sub (Sdl.get_ticks ()) start);
+  let x, y = Sdl.get_window_size ctx.window in
+  Printf.printf "Render time: %lims %ix%i" (Int32.sub (Sdl.get_ticks ()) start) x y;
   print_newline ()
