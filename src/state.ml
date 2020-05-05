@@ -33,6 +33,7 @@ type t = {
   playfield : color option array array
 }
 
+let pauseable = false
 
 let field_width (state:t) : int =
   Array.length state.playfield.(0)
@@ -162,7 +163,7 @@ let rec fill_in_rows state height =
         then Array.fill state.playfield.(height) 0 (field_width state) None
         else ();
         fill_in_rows state (height - 1))
-  else ()
+  else state.playfield.(height) <- Array.make (field_width state) None
 
 
 let rec clear_lines_helper state height =
@@ -170,10 +171,10 @@ let rec clear_lines_helper state height =
     if (check_row state.playfield.(height))
     then
       (fill_in_rows state height;
-       let new_state =
-         { state with lines = state.lines + 1;
-                      level = max state.level (1 + (state.lines + 1) / 10) } in
-       clear_lines_helper new_state height)
+       let new_state = recalculate_fall_speed
+           { state with lines = state.lines + 1;
+                        level = max state.level (1 + (state.lines + 1) / 10) }
+       in clear_lines_helper new_state height)
     else clear_lines_helper state (height - 1)
   end
   else state

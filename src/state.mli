@@ -16,6 +16,9 @@ type v =
 (** The representation of a Tetris gamestate. *)
 type t
 
+(** [pauseable] is whether this state is pauseable. *)
+val pauseable : bool
+
 (** [init width height level] is the initialized state of the game with
     playfield of size [width] by [height] starting at [level]. *)
 val init : int -> int -> int -> t
