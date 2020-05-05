@@ -125,17 +125,19 @@ let draw_queue (ctx:t) (state:State.t) (size:int) (n:int) (x,y:int*int) : unit =
     background color of [bg]. *)
 let draw_text (ctx:t) (size:int) (text:string) (fg:Sdl.color) (bg:Sdl.color)
     (x,y:int*int) : unit =
-  let score = Ttf.render_text_shaded ctx.font text fg bg
-              |> unpack "Failed to render TTF"
-              |> Sdl.create_texture_from_surface ctx.renderer
-              |> unpack "Failed to create texture from font surface" in
-  let _, _, (score_w, score_h) = Sdl.query_texture score
+  let surf = Ttf.render_text_shaded ctx.font text fg bg
+             |> unpack "Failed to render TTF" in
+  let texture = surf
+                |> Sdl.create_texture_from_surface ctx.renderer
+                |> unpack "Failed to create texture from font surface" in
+  let _, _, (score_w, score_h) = Sdl.query_texture texture
                                  |> unpack "Failed to query texture" in
   let score_w, score_h = score_w * size / 60, score_h * size / 60 in
   let score_rect = Sdl.Rect.create x y score_w score_h in
-  Sdl.render_copy ~dst:score_rect ctx.renderer score
-  |> unpack "Failed to copy text texture onto screen"
-  |> ignore
+  Sdl.render_copy ~dst:score_rect ctx.renderer texture
+  |> unpack "Failed to copy text texture onto screen";
+  Sdl.free_surface surf;
+  Sdl.destroy_texture texture
 
 (** [draw_game_info ctx state size pos] renders the game information of [state]
     with size [size] at coordinates [pos]. *)
