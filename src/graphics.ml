@@ -1,10 +1,17 @@
 open Tsdl
 
+type duck_image = (State.color * Tsdl.Sdl.texture)
+
 type t = {
   window : Sdl.window;
   renderer : Sdl.renderer;
   pixel_format : Sdl.pixel_format;
+  duck_mode: bool;
+  duck_images : duck_image list
 }
+
+let tet_types = ["i";"j";"l";"o";"s";"z";"t"]
+
 
 (** [unpack message result] is [value] if [result] is [Ok value]. Otherwise, it
     logs [message] along with the error, and exits the program. *)
@@ -18,16 +25,49 @@ let unpack (message:string) (result:'a Sdl.result) : 'a =
 let set_color (r,g,b:int*int*int) ?(a:int=255) (ctx:t): unit =
   Sdl.set_render_draw_color ctx.renderer r g b a |> ignore
 
+
+(**  [render_duck ctx rect image_path ] draws a duck (based on the image at 
+     [image_path]) on this [rect] in graphics contect [ctx] *)
+let render_duck_image (ctx:t) (rect:Sdl.rect) (texture:Tsdl.Sdl.texture) =
+  Sdl.render_copy ~dst:rect ctx.renderer texture  
+  |> unpack "failed to render texture"
+
 (** [fill_rect rect ctx] fills [rect] using [ctx]. *)
 let fill_rect (rect:Sdl.rect) (ctx:t) : unit = 
   Sdl.render_fill_rect ctx.renderer (Some rect) |> ignore
+
+let render_square (rect:Sdl.rect) (ctx:t) (color:State.color) : unit =
+  if ctx.duck_mode then
+    let texture = (List.assoc color ctx.duck_images)
+    in render_duck_image ctx rect texture
+  else begin
+    set_color color ctx;
+    fill_rect rect ctx
+  end
 
 (** [fill_coords x y width height ctx] fills a rectangle using [ctx] at
     coordinates [(x, y)] with size [width] by [height]. *)
 let fill_coords (x:int) (y:int) (w:int) (h:int) (ctx:t) : unit = 
   let rect = Sdl.Rect.create x y w h in fill_rect rect ctx
 
-let init () : t =
+let create_duck_texture (renderer:Sdl.renderer) (image_path:string) : Tsdl.Sdl.texture= 
+  let surface = Sdl.load_bmp image_path
+                |> unpack "failed to load image" in
+  Sdl.create_texture_from_surface renderer surface 
+  |> unpack "failed to make texture"
+
+let rec duck_path_dict
+    (renderer: Sdl.renderer)
+    (colors: State.color list)
+    (count:int) : duck_image list = 
+  match colors with 
+  | h::t -> 
+    let texture = ("/resources/images/duck"^(string_of_int count)^".bmp" 
+                   |> create_duck_texture renderer) in
+    (h,texture)::(duck_path_dict renderer t (count+1))
+  | [] -> []
+
+let init (duck_mode:bool) : t =
   Sdl.init_sub_system Sdl.Init.video |> unpack "Graphics init error";
   let window =
     Sdl.create_window ~w:1000 ~h:1500 "Ducktris" Sdl.Window.opengl
@@ -44,6 +84,8 @@ let init () : t =
     window=window;
     renderer=renderer;
     pixel_format=pixel_format;
+    duck_mode=duck_mode;
+    duck_images = duck_path_dict renderer Tetromino.colors 1
   }
 
 (** [draw_tetromino ctx piece rot surf x y size] draws [piece] at [rot] in
@@ -52,17 +94,6 @@ let init () : t =
 let draw_tetromino (ctx:t) (piece:Tetromino.t) (rot:int) (surf:Sdl.surface)
     (x:int) (y:int) (size:int) : unit =
   ()
-
-(**  [render_duck ctx image_path rect] draws a duck (based on the image at 
-     [image_path]) on this [rect] in graphics contect [ctx] *)
-let render_duck_image (ctx:t) (image_path:string) (rect:Sdl.rect) =
-  let surface = Sdl.load_bmp image_path
-                |> unpack "failed to load image" in
-  let texture = Sdl.create_texture_from_surface ctx.renderer surface 
-                |> unpack "failed to make texture" in
-  Sdl.render_copy ~dst:rect ctx.renderer texture  
-  |> unpack "failed to render texture"
-
 
 (** [draw_playfield ctx state pos size] is the rendered playfield of [state]
     at [pos]with a tile length of [size] in graphics context [ctx]. *)
@@ -83,7 +114,7 @@ let draw_playfield (ctx:t) (state:State.t) (x,y:int*int) (size:int) : unit =
       | State.Falling (color, a) | State.Ghost (color, a) ->
         (*set_color color ~a:a ctx;
           fill_rect rect ctx*)
-        render_duck_image ctx "/resources/images/duck1.bmp" rect;
+        render_square rect ctx color
       | State.Empty -> ()
     done
   done;

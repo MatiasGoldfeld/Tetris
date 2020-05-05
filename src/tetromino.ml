@@ -28,6 +28,7 @@ let wall_kicks_4 = [|
 |]
 
 type t = {
+  tetromino_type: string;
   color : color;
   shape : int list list;
   wall_kicks : wall_kicks_t array;
@@ -35,36 +36,43 @@ type t = {
 
 let defaults : t list = [
   { (* i tetromino *)
+    tetromino_type = "i";
     color = (0, 255, 255);
     shape = [[0;0;0;0];[1;1;1;1];[0;0;0;0];[0;0;0;0]];
     wall_kicks = wall_kicks_4;
   };
   { (* j tetromino *)
+    tetromino_type = "j";
     color = (255, 165, 0);
     shape = [[1;0;0];[1;1;1];[0;0;0]];
     wall_kicks = wall_kicks_3;
   };
   { (* l tetromino *)
+    tetromino_type= "l";
     color = (0, 0, 255);
     shape = [[0;0;1];[1;1;1];[0;0;0]];
     wall_kicks = wall_kicks_3;
   };
   { (* o tetromino *)
+    tetromino_type  = "o";
     color = (255, 255, 0);
     shape = [[1;1];[1;1]];
     wall_kicks = wall_kicks_3;
   };
   { (* s tetromino *)
+    tetromino_type = "s";
     color = (0, 128, 0);
     shape = [[0;1;1];[1;1;0];[0;0;0]];
     wall_kicks = wall_kicks_3;
   };
   { (* z tetromino *)
+    tetromino_type =  "z";
     color = (255, 0, 0);
     shape = [[1;1;0];[0;1;1];[0;0;0]];
     wall_kicks = wall_kicks_3;
   };
   { (* t tetromino *)
+    tetromino_type = "t";
     color = (128, 0, 128);
     shape = [[0;1;0];[1;1;1];[0;0;0]];
     wall_kicks = wall_kicks_3;
@@ -73,6 +81,9 @@ let defaults : t list = [
 
 let size (piece:t) : int =
   List.length piece.shape
+
+let colors =
+  List.map (fun d -> d.color) defaults
 
 let max_size : int =
   List.map size defaults

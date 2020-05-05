@@ -13,6 +13,10 @@ type v =
   | Static of color
   | Ghost of color * int
 
+(* the [i]th element in score_multipliers corresponds to the points 
+   rewarded for clearing (1+i) lines *)
+let score_multipliers = [40; 100; 300; 1200]
+
 type t = {
   score : int;
   lines : int;

@@ -1,11 +1,15 @@
 (** The representation of a tetromino. *)
 type t
+type color = (int*int*int)
 
 (** [defaults] are the possible tetromino shapes. *)
 val defaults : t list
 
 (** [size piece] is the bounding box of [piece]. *)
 val size : t -> int
+
+(** [colors] are the possible tetromino colors. *)
+val colors: color list
 
 (** [max_size] is the maximum size of the default tetrominoes. *)
 val max_size : int
