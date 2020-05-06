@@ -198,27 +198,15 @@ let rec clear_lines_helper state height score_dif =
        in clear_lines_helper new_state height (score_dif+1))
     else clear_lines_helper state (height - 1) (score_dif)
   end
-  else { state with score = state.score +  score_multipliers.(score_dif)}
+  else let new_score = state.score +  state.level*score_multipliers.(score_dif) 
+    in { state with score = new_score}
 
 let clear_lines state = 
   clear_lines_helper state (field_height state - 1) 0
 
-
-let place_piece state pos_x pos_y =
-  for col = pos_x to pos_x + (Tetromino.size state.falling - 1) do
-    for row = pos_y to pos_y + (Tetromino.size state.falling - 1) do 
-      let new_val = Tetromino.value state.falling state.falling_rot 
-          (col - pos_x) (row - pos_y) in
-      if new_val <> None && (row - pos_y >= 0)
-      then state.playfield.(row).(col) <- new_val
-      else ()
-    done
-  done;
-  drop (clear_lines state)
-
 let value (state:t) (c:int) (r:int) : v =
   if r < 0 || c < 0 || r >= field_height state || c >= field_width state
-  then raise (InvalidCoordinates ((string_of_int c) ^", " ^ (string_of_int r)))
+  then Empty
   else match state.playfield.(r).(c) with
     | Some color -> Static color
     | None ->
@@ -235,6 +223,41 @@ let value (state:t) (c:int) (r:int) : v =
           | None -> Empty
       else
         Empty
+
+(** [is_t_spin state pos_x pos_y ] checks if [state]'s falling tetromino 
+    satisfies the t_spin conditions *)
+let is_mini_t_spin state pos_x pos_y =
+  let tet = state.falling in
+  if Tetromino.size tet <> 3 then false
+  else begin
+    let uLeft = value state (pos_y) (pos_x) in
+    let uRight = value state (pos_y+2) (pos_x) in
+    let dLeft = value state (pos_y) (pos_x) in
+    let dRight = value state (pos_y) (pos_x+2) in
+    match uLeft, uRight, dLeft, dRight with
+    | _, Static _, Static _, Static _ 
+    | Static _, _, Static _, Static _
+    | Static _, Static _, _, Static _
+    | Static _, Static _, Static _, _ -> true
+    | _ -> false
+  end
+
+let place_piece state pos_x pos_y =
+  let spin_score_state =
+    if is_mini_t_spin state pos_x pos_y then 
+      {state with score = 100*state.level} else
+      state in 
+  for col = pos_x to pos_x + (Tetromino.size state.falling - 1) do
+    for row = pos_y to pos_y + (Tetromino.size state.falling - 1) do 
+      let new_val = Tetromino.value state.falling state.falling_rot 
+          (col - pos_x) (row - pos_y) in
+      if new_val <> None && (row - pos_y >= 0)
+      then 
+        state.playfield.(row).(col) <- new_val
+      else ()
+    done
+  done;
+  drop (clear_lines spin_score_state)
 
 let queue (state:t) : Tetromino.t list =
   state.queue
@@ -345,7 +368,9 @@ let hold (state:t) : t =
     else hold_drop {state with held = Some state.falling; held_before = true} p
 
 let hard_drop (state:t) : t =
-  place_piece state (fst state.falling_pos) state.ghost_row
+  place_piece 
+    {state with score = 2*(snd state.falling_pos - state.ghost_row)} 
+    (fst state.falling_pos) state.ghost_row
 
 let handle_events (f:event -> unit) (state:t) : t =
   List.iter f (List.rev state.events);
