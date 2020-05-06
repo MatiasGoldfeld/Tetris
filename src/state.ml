@@ -14,8 +14,8 @@ type v =
   | Ghost of color * int
 
 (* the [i]th element in score_multipliers corresponds to the points 
-   rewarded for clearing (1+i) lines *)
-let score_multipliers = [40; 100; 300; 1200]
+   rewarded for clearing i lines *)
+let score_multipliers = [|0;100; 300; 500; 800|]
 
 type t = {
   score : int;
@@ -175,7 +175,7 @@ let rec fill_in_rows state height =
         fill_in_rows state (height - 1))
   else state.playfield.(height) <- Array.make (field_width state) None
 
-let rec clear_lines_helper state height =
+let rec clear_lines_helper state height score_dif =
   if height >= 0 then begin
     if (check_row state.playfield.(height))
     then
@@ -183,13 +183,14 @@ let rec clear_lines_helper state height =
        let new_state = recalculate_fall_speed
            { state with lines = state.lines + 1;
                         level = max state.level (1 + (state.lines + 1) / 10) }
-       in clear_lines_helper new_state height)
-    else clear_lines_helper state (height - 1)
+       in clear_lines_helper new_state height (score_dif+1))
+    else clear_lines_helper state (height - 1) (score_dif)
   end
-  else state
+  else { state with score = state.score +  score_multipliers.(score_dif)}
 
-let clear_lines state =
-  clear_lines_helper state (field_height state - 1)
+let clear_lines state = 
+  clear_lines_helper state (field_height state - 1) 0
+
 
 let place_piece state pos_x pos_y =
   for col = pos_x to pos_x + (Tetromino.size state.falling - 1) do
