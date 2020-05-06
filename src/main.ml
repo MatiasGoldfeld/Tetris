@@ -1,5 +1,7 @@
 open Tsdl
 
+module LocalGame = Game.Make (State.Local)
+
 let main () =
   match Sdl.init Sdl.Init.(events + timer) with
   | Error (`Msg e) -> Sdl.log "Main init error: %s" e; exit 1
@@ -26,7 +28,7 @@ let main () =
       (Sdl.K.space,  Game.GHard);
       (Sdl.K.c,      Game.GHold);
     ] in
-    Game.init 1 menu_controls game_controls audio graphics;
+    LocalGame.init 1 menu_controls game_controls audio graphics;
     Sdl.quit ();
     exit 0
 
