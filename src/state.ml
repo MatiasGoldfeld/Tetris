@@ -23,6 +23,9 @@ type t = {
   level : int;
   fall_speed : int;
   step_delta : int;
+  ext_placement : bool;
+  ext_placement_move_count : int;
+  ext_placement_delta : int;
   events : event list;
   queue : Tetromino.t list;
   held : Tetromino.t option;
@@ -111,10 +114,16 @@ let rec update_ghost (state:t) : t =
 let drop_help state =
   let column = 5 - (Tetromino.size state.falling / 2) in
   if legal state state.falling state.falling_rot (column, 0)
-  then {state with falling_pos = (column, 0)} |> update_ghost
+  then {state with falling_pos = (column, 0);
+                   ext_placement_move_count = 0; 
+                   ext_placement = false;
+                   ext_placement_delta = 0} |> update_ghost
   else begin
     if legal state state.falling state.falling_rot (column, -1)
-    then {state with falling_pos = (column, -1)} |> update_ghost
+    then {state with falling_pos = (column, -1);
+                     ext_placement_move_count = 0; 
+                     ext_placement = false;
+                     ext_placement_delta = 0} |> update_ghost
     else failwith "gameover"
   end
 
@@ -143,6 +152,9 @@ let init (width:int) (height:int) (level:int) : t =
     level = level;
     fall_speed = -1;
     step_delta = 0;
+    ext_placement = false;
+    ext_placement_move_count = 0;
+    ext_placement_delta = 0;
     events = [];
     queue = List.tl queue;
     held = None;
@@ -230,23 +242,63 @@ let queue (state:t) : Tetromino.t list =
 let held (state:t) : Tetromino.t option =
   state.held
 
+
+
+
+
+
 (** [step state] is the [state] after the falling piece has stepped down. *)
 let step (state:t) : t =
   let pos_x, pos_y = state.falling_pos in
-  if legal state state.falling state.falling_rot (pos_x, pos_y + 1) then
-    { state with falling_pos = (pos_x, pos_y + 1); step_delta = 0; }
-  else 
-    place_piece state pos_x pos_y
+  { 
+    state with falling_pos = (pos_x, pos_y + 1); step_delta = 0; 
+               ext_placement = false; ext_placement_delta = 0; 
+               ext_placement_move_count = 0;
+  }
 
 let update (state:t) (delta:int) (soft_drop:bool) : t =
   let new_delta = state.step_delta + delta * if soft_drop then 20 else 1 in
+  let new_ext_delta = state.ext_placement_delta + delta in
   let state = {state with step_delta=new_delta} in
-  if state.step_delta >= state.fall_speed then
+  if state.step_delta >= state.fall_speed 
+  then begin
     let new_state = 
-      if soft_drop then {state with score= state.score+1} 
+      if soft_drop 
+      then {state with score= state.score+1} 
       else state in
-    step new_state
+    if snd state.falling_pos <> state.ghost_row
+    then step new_state
+    else begin 
+      if (new_ext_delta >= 500)
+      then place_piece state (fst state.falling_pos) (snd state.falling_pos)
+      else {state with ext_placement_delta = new_ext_delta}
+    end
+  end
   else state
+
+
+
+
+let ext_placement_add state = 
+  if state.ext_placement_move_count >= 15
+  then begin
+    (print_endline (Int.to_string (state.ext_placement_move_count + 1)));
+    (print_endline (Int.to_string state.ext_placement_delta));
+    {
+      state with 
+      ext_placement_move_count = state.ext_placement_move_count + 1
+    }
+  end
+  else begin
+    (print_endline (Int.to_string (state.ext_placement_move_count + 1)));
+    (print_endline (Int.to_string state.ext_placement_delta));
+    {
+      state with 
+      ext_placement_move_count = state.ext_placement_move_count + 1;
+      ext_placement_delta = 0
+    }
+  end
+
 
 let rotate (rotation:[`CCW | `CW]) (state:t) : t =
   let rot = state.falling_rot in
@@ -256,8 +308,8 @@ let rotate (rotation:[`CCW | `CW]) (state:t) : t =
     | (x, y)::t ->
       let check_pos = (x + fst state.falling_pos, y + snd state.falling_pos) in
       if legal state state.falling new_rot check_pos then
-        { state with falling_rot = new_rot; 
-                     falling_pos = check_pos; }
+        let ext_state = ext_placement_add state in
+        { ext_state with falling_rot = new_rot; falling_pos = check_pos}
         |> update_ghost
       else test_rot t
   in test_rot (Tetromino.wall_kicks state.falling rot rotation)
@@ -266,8 +318,10 @@ let move (direction:[`Left | `Right]) (state:t) : t =
   let new_pos = match direction with
     | `Left -> fst state.falling_pos - 1, snd state.falling_pos
     | `Right -> fst state.falling_pos + 1, snd state.falling_pos
-  in if legal state state.falling state.falling_rot new_pos then 
-    { state with falling_pos = new_pos }
+  in 
+  if legal state state.falling state.falling_rot new_pos then 
+    let ext_state = ext_placement_add state in
+    { ext_state with falling_pos = new_pos }
     |> update_ghost
   else state
 
