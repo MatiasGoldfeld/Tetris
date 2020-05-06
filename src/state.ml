@@ -23,9 +23,9 @@ type t = {
   level : int;
   fall_speed : int;
   step_delta : int;
-  ext_placement : bool;
   ext_placement_move_count : int;
   ext_placement_delta : int;
+  min_row : int;
   events : event list;
   queue : Tetromino.t list;
   held : Tetromino.t option;
@@ -115,15 +115,15 @@ let drop_help state =
   let column = 5 - (Tetromino.size state.falling / 2) in
   if legal state state.falling state.falling_rot (column, 0)
   then {state with falling_pos = (column, 0);
-                   ext_placement_move_count = 0; 
-                   ext_placement = false;
-                   ext_placement_delta = 0} |> update_ghost
+                   ext_placement_move_count = 0;
+                   ext_placement_delta = 0;
+                   min_row = 0} |> update_ghost
   else begin
     if legal state state.falling state.falling_rot (column, -1)
     then {state with falling_pos = (column, -1);
                      ext_placement_move_count = 0; 
-                     ext_placement = false;
-                     ext_placement_delta = 0} |> update_ghost
+                     ext_placement_delta = 0;
+                     min_row = -1} |> update_ghost
     else failwith "gameover"
   end
 
@@ -152,9 +152,9 @@ let init (width:int) (height:int) (level:int) : t =
     level = level;
     fall_speed = -1;
     step_delta = 0;
-    ext_placement = false;
     ext_placement_move_count = 0;
     ext_placement_delta = 0;
+    min_row = -1;
     events = [];
     queue = List.tl queue;
     held = None;
@@ -250,10 +250,15 @@ let held (state:t) : Tetromino.t option =
 (** [step state] is the [state] after the falling piece has stepped down. *)
 let step (state:t) : t =
   let pos_x, pos_y = state.falling_pos in
+  let
+    ext_adjust = if pos_y + 1 > state.min_row then 0 else 1
+  in
   { 
     state with falling_pos = (pos_x, pos_y + 1); step_delta = 0; 
-               ext_placement = false; ext_placement_delta = 0; 
-               ext_placement_move_count = 0;
+               ext_placement_delta = 0; 
+               ext_placement_move_count = 
+                 state.ext_placement_move_count * ext_adjust;
+               min_row = pos_y + 1
   }
 
 let update (state:t) (delta:int) (soft_drop:bool) : t =
@@ -280,25 +285,22 @@ let update (state:t) (delta:int) (soft_drop:bool) : t =
 
 
 let ext_placement_add state = 
+  let 
+    move_count_add = if snd state.falling_pos = state.ghost_row then 1 else 0 in
   if state.ext_placement_move_count >= 15
-  then begin
-    (print_endline (Int.to_string (state.ext_placement_move_count + 1)));
-    (print_endline (Int.to_string state.ext_placement_delta));
+  then 
     {
       state with 
-      ext_placement_move_count = state.ext_placement_move_count + 1
+      ext_placement_move_count = 
+        state.ext_placement_move_count + move_count_add
     }
-  end
-  else begin
-    (print_endline (Int.to_string (state.ext_placement_move_count + 1)));
-    (print_endline (Int.to_string state.ext_placement_delta));
+  else 
     {
       state with 
-      ext_placement_move_count = state.ext_placement_move_count + 1;
+      ext_placement_move_count = 
+        state.ext_placement_move_count + move_count_add;
       ext_placement_delta = 0
     }
-  end
-
 
 let rotate (rotation:[`CCW | `CW]) (state:t) : t =
   let rot = state.falling_rot in
