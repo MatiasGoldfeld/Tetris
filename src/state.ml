@@ -266,10 +266,6 @@ let held (state:t) : Tetromino.t option =
   state.held
 
 
-
-
-
-
 (** [step state] is the [state] after the falling piece has stepped down. *)
 let step (state:t) : t =
   let pos_x, pos_y = state.falling_pos in
@@ -278,7 +274,7 @@ let step (state:t) : t =
   in
   { 
     state with falling_pos = (pos_x, pos_y + 1); step_delta = 0; 
-               ext_placement_delta = 0; 
+               ext_placement_delta = state.ext_placement_delta * ext_adjust; 
                ext_placement_move_count = 
                  state.ext_placement_move_count * ext_adjust;
                min_row = pos_y + 1
@@ -297,7 +293,7 @@ let update (state:t) (delta:int) (soft_drop:bool) : t =
     if snd state.falling_pos <> state.ghost_row
     then step new_state
     else begin 
-      if (new_ext_delta >= 500)
+      if (new_ext_delta >= 500 && snd state.falling_pos = state.ghost_row)
       then place_piece state (fst state.falling_pos) (snd state.falling_pos)
       else {state with ext_placement_delta = new_ext_delta}
     end
