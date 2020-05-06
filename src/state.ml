@@ -242,7 +242,10 @@ let update (state:t) (delta:int) (soft_drop:bool) : t =
   let new_delta = state.step_delta + delta * if soft_drop then 20 else 1 in
   let state = {state with step_delta=new_delta} in
   if state.step_delta >= state.fall_speed then
-    step state
+    let new_state = 
+      if soft_drop then {state with score= state.score+1} 
+      else state in
+    step new_state
   else state
 
 let rotate (rotation:[`CCW | `CW]) (state:t) : t =
