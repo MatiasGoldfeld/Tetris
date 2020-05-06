@@ -25,8 +25,8 @@ module type S = sig
   val in_menu : t -> bool
 end
 
-module Make (State : State.S) = struct
-  module GR = Graphics.MakeGameRenderer (State)
+module Make (S : State.S) = struct
+  module GR = Graphics.MakeGameRenderer (S)
 
   type menu_inputs_t = (Sdl.keycode, (t -> t) * bool) Hashtbl.t
   and game_inputs_t = {
@@ -35,7 +35,7 @@ module Make (State : State.S) = struct
   }
 
   and t = {
-    state : State.t;
+    state : S.t;
     last_update : int;
     menu_inputs : menu_inputs_t;
     game_inputs : game_inputs_t;
@@ -69,13 +69,13 @@ module Make (State : State.S) = struct
     let state_fun f game = {game with state = f game.state} in
     match i with
     | GMenu  -> add k ((fun x -> {x with in_menu = true}), false)
-    | GLeft  -> add k (state_fun (State.move `Left), true)
-    | GRight -> add k (state_fun (State.move `Right), true)
-    | GCW    -> add k (state_fun (State.rotate `CW), false)
-    | GCCW   -> add k (state_fun (State.rotate `CCW), false)
+    | GLeft  -> add k (state_fun (S.move `Left), true)
+    | GRight -> add k (state_fun (S.move `Right), true)
+    | GCW    -> add k (state_fun (S.rotate `CW), false)
+    | GCCW   -> add k (state_fun (S.rotate `CCW), false)
     | GSoft  -> inputs.soft_drop <- k
-    | GHard  -> add k (state_fun (State.hard_drop), false)
-    | GHold  -> add k (state_fun (State.hold), false)
+    | GHard  -> add k (state_fun (S.hard_drop), false)
+    | GHold  -> add k (state_fun (S.hold), false)
 
   let rec handle_events (game:t) : t =
     let event = Sdl.Event.create () in
@@ -113,7 +113,7 @@ module Make (State : State.S) = struct
             let soft_sc = Sdl.get_scancode_from_key
                 game.game_inputs.soft_drop in
             let soft = (Sdl.get_keyboard_state ()).{soft_sc} = 1 in
-            State.update game.state delta soft in
+            S.update game.state delta soft in
         GR.render game.graphics [game.state];
         { game with state = state; last_update = time }
       else
@@ -134,7 +134,7 @@ module Make (State : State.S) = struct
     List.iter (menu_inputs_press menu_inputs) menu_controls;
     List.iter (game_inputs_press game_inputs) game_controls;
     loop {
-      state = (State.init 10 20 level);
+      state = (S.init 10 20 level);
       last_update = Int32.to_int (Sdl.get_ticks ());
       menu_inputs = menu_inputs;
       game_inputs = game_inputs;

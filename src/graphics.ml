@@ -116,18 +116,18 @@ let draw_tetromino (ctx:t) (piece:Tetromino.t) (rot:int) (x:int) (y:int)
   done
 
 module type GameRenderer = sig
-  module State : State.S
-  val render : t -> State.t list -> unit
+  module S : State.S
+  val render : t -> S.t list -> unit
 end
 
 module MakeGameRenderer (S : State.S) = struct
-  module State = S
+  module S = S
 
   (** [draw_playfield ctx state pos size] renders the playfield of [state]
       at [pos]with a tile length of [size] in graphics context [ctx]. *)
-  let draw_playfield (ctx:t) (state:State.t) (x,y:int*int) (size:int) : unit =
-    let rows = State.field_height state in
-    let cols = State.field_width state in
+  let draw_playfield (ctx:t) (state:S.t) (x,y:int*int) (size:int) : unit =
+    let rows = S.field_height state in
+    let cols = S.field_width state in
     let width = cols * size in
     let height = rows * size in
 
@@ -135,7 +135,7 @@ module MakeGameRenderer (S : State.S) = struct
     for row = 0 to rows - 1 do
       for col = 0 to cols - 1 do
         let rect = Sdl.Rect.create (x + col * size) (y + row * size) size size in
-        match State.value state col row with
+        match S.value state col row with
         | State.Static color ->
           (*set_color color ctx;
             fill_rect rect ctx*)
@@ -163,7 +163,7 @@ module MakeGameRenderer (S : State.S) = struct
       tile length of [size] in graphics context [ctx] at coordinates [pos].
       Only the first [n] tetronimoes are drawn.
       Requires: 0 <= [n] <= [List.length Tetromino.defaults] *)
-  let draw_queue (ctx:t) (state:State.t) (size:int) (n:int) (x,y:int*int) : unit =
+  let draw_queue (ctx:t) (state:S.t) (size:int) (n:int) (x,y:int*int) : unit =
     let border = size in
     let rec draw_next pos = function
       | [] -> failwith "Missing tetromino while drawing queue"
@@ -173,7 +173,7 @@ module MakeGameRenderer (S : State.S) = struct
         if pos + 1 < n
         then draw_next (pos + 1) t
         else ()
-    in draw_next 0 (State.queue state)
+    in draw_next 0 (S.queue state)
 
   (** [draw_text ctx size text fg bg pos] draws [text] with size [size] at
       coordinates [pos] using [ctx], with a foreground color of [fg] and a
@@ -196,13 +196,13 @@ module MakeGameRenderer (S : State.S) = struct
 
   (** [draw_game_info ctx state size pos] renders the game information of [state]
       with size [size] at coordinates [pos]. *)
-  let draw_game_info (ctx:t) (state:State.t) (size:int) (x,y:int*int) : unit =
+  let draw_game_info (ctx:t) (state:S.t) (size:int) (x,y:int*int) : unit =
     let bg = let r, g, b = ctx.bg_color in Sdl.Color.create r g b 255 in
     let fg = Sdl.Color.create 200 200 200 255 in
-    let t_score = "Score: " ^ Int.to_string (State.score state) in
+    let t_score = "Score: " ^ Int.to_string (S.score state) in
     let t_time  = "Time: " ^ "idk" in
-    let t_lines = "Lines: " ^ Int.to_string (State.lines state) in
-    let t_level = "Level: " ^ Int.to_string (State.level state) in
+    let t_lines = "Lines: " ^ Int.to_string (S.lines state) in
+    let t_level = "Level: " ^ Int.to_string (S.level state) in
     let x_offset, y_offset = size, size * 8 in
     let f_border = size / 10 in
     let f_x, f_y, f_w, f_h =
@@ -212,7 +212,7 @@ module MakeGameRenderer (S : State.S) = struct
     let f_in = Sdl.Rect.create f_x f_y f_w f_h in
     set_color (31, 31, 31) ctx; fill_rect f_out ctx;
     set_color (100, 100, 100) ctx; fill_rect f_in ctx;
-    begin match State.held state with
+    begin match S.held state with
       | None -> ()
       | Some piece ->
         draw_tetromino ctx piece 0 (x + size * 2) (y + size * 2) size
@@ -222,14 +222,14 @@ module MakeGameRenderer (S : State.S) = struct
     draw_text ctx size t_lines fg bg (x + x_offset, y + y_offset + size * 4);
     draw_text ctx size t_level fg bg (x + x_offset, y + y_offset + size * 6)
 
-  let render (ctx:t) (states:State.t list) : unit =
+  let render (ctx:t) (states:S.t list) : unit =
     let state = List.hd states in
     let w_desire, h_desire = 24, 20 in
     let w_true, h_true = Sdl.get_window_size ctx.window in
     let size = min (w_true / w_desire) (h_true / h_desire) in
     let x_offset = (w_true - w_desire * size + 1) / 2 in
     let y_offset = (h_true - h_desire * size + 1) / 2 in
-    let field_width = State.field_width state * size in
+    let field_width = S.field_width state * size in
     set_color ctx.bg_color ctx;
     Sdl.render_clear ctx.renderer |> unpack "Failed to clear renderer";
     let start = Sdl.get_ticks () in (* temp *)

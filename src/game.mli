@@ -32,4 +32,4 @@ module type S = sig
   val in_menu : t -> bool
 end
 
-module Make (State : State.S) : S
+module Make (S : State.S) : S

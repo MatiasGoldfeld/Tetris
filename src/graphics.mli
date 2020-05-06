@@ -6,11 +6,11 @@ type t
 val init : bool -> string -> t
 
 module type GameRenderer = sig
-  module State : State.S
+  module S : State.S
   (** [render ctx states] provides a graphical representation of all [states]
       using graphics context [ctx]. *)
-  val render : t -> State.t list -> unit
+  val render : t -> S.t list -> unit
 end
 
 module MakeGameRenderer (S : State.S) :
-  GameRenderer with module State = S
+  GameRenderer with module S = S

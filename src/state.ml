@@ -3,13 +3,17 @@ type event =
   | Drop
   | Locking
 
+type color = int * int * int
+
+exception InvalidCoordinates of string
+
+type v =
+  | Empty
+  | Falling of color * int
+  | Static of color
+  | Ghost of color * int
+
 module type S = sig
-  type color = int * int * int
-  type v =
-    | Empty
-    | Falling of color * int
-    | Static of color
-    | Ghost of color * int
   type t
   val pauseable : bool
   val init : int -> int -> int -> t
@@ -30,16 +34,6 @@ module type S = sig
 end
 
 module Local : S = struct
-  type color = int * int * int
-
-  type v =
-    | Empty
-    | Falling of color * int
-    | Static of color
-    | Ghost of color * int
-
-  exception InvalidCoordinates of string
-
   (* the [i]th element in score_multipliers corresponds to the points 
      rewarded for clearing i lines *)
   let score_multipliers = [|0;100; 300; 500; 800|]
@@ -50,9 +44,9 @@ module Local : S = struct
     level : int;
     fall_speed : int;
     step_delta : int;
-    ext_placement : bool;
     ext_placement_move_count : int;
     ext_placement_delta : int;
+    min_row : int;
     events : event list;
     queue : Tetromino.t list;
     held : Tetromino.t option;
@@ -62,9 +56,9 @@ module Local : S = struct
     (* The (c, r) position of the falling tetromino. *)
     falling_pos : int * int;
     ghost_row : int;
-    (* The array of rows, with 0 representing the top row. The columns are arrays
-       of color options, with 0 representing the left column. Only blocks already
-       placed on the playfield are represented here. *)
+    (* The array of rows, with 0 representing the top row. The columns are
+       arrays of color options, with 0 representing the left column. Only blocks
+       already placed on the playfield are represented here. *)
     playfield : color option array array
   }
 
@@ -86,7 +80,7 @@ module Local : S = struct
     state.lines
 
   (** [legal state falling falling_rot falling_pos] is true if the anticipated
-      movement [falling] [falling_rot] [falling_pos] is legal. False otherwise. *)
+      movement [falling] [falling_rot] [falling_pos] is legal. *)
   let legal state falling falling_rot falling_pos =
     let rec check_row col row =
       col >= Tetromino.size falling || begin
@@ -142,15 +136,15 @@ module Local : S = struct
     let column = 5 - (Tetromino.size state.falling / 2) in
     if legal state state.falling state.falling_rot (column, 0)
     then {state with falling_pos = (column, 0);
-                     ext_placement_move_count = 0; 
-                     ext_placement = false;
-                     ext_placement_delta = 0} |> update_ghost
+                     ext_placement_move_count = 0;
+                     ext_placement_delta = 0;
+                     min_row = 0} |> update_ghost
     else begin
       if legal state state.falling state.falling_rot (column, -1)
       then {state with falling_pos = (column, -1);
                        ext_placement_move_count = 0; 
-                       ext_placement = false;
-                       ext_placement_delta = 0} |> update_ghost
+                       ext_placement_delta = 0;
+                       min_row = -1} |> update_ghost
       else failwith "gameover"
     end
 
@@ -179,9 +173,9 @@ module Local : S = struct
       level = level;
       fall_speed = -1;
       step_delta = 0;
-      ext_placement = false;
       ext_placement_move_count = 0;
       ext_placement_delta = 0;
+      min_row = -1;
       events = [];
       queue = List.tl queue;
       held = None;
@@ -225,27 +219,16 @@ module Local : S = struct
          in clear_lines_helper new_state height (score_dif+1))
       else clear_lines_helper state (height - 1) (score_dif)
     end
-    else { state with score = state.score +  score_multipliers.(score_dif)}
+    else
+      let new_score = state.score + state.level*score_multipliers.(score_dif) in
+      { state with score = new_score}
 
   let clear_lines state = 
     clear_lines_helper state (field_height state - 1) 0
 
-
-  let place_piece state pos_x pos_y =
-    for col = pos_x to pos_x + (Tetromino.size state.falling - 1) do
-      for row = pos_y to pos_y + (Tetromino.size state.falling - 1) do 
-        let new_val = Tetromino.value state.falling state.falling_rot 
-            (col - pos_x) (row - pos_y) in
-        if new_val <> None && (row - pos_y >= 0)
-        then state.playfield.(row).(col) <- new_val
-        else ()
-      done
-    done;
-    drop (clear_lines state)
-
   let value (state:t) (c:int) (r:int) : v =
     if r < 0 || c < 0 || r >= field_height state || c >= field_width state
-    then raise (InvalidCoordinates ((string_of_int c) ^", " ^ (string_of_int r)))
+    then Empty
     else match state.playfield.(r).(c) with
       | Some color -> Static color
       | None ->
@@ -263,6 +246,41 @@ module Local : S = struct
         else
           Empty
 
+  (** [is_t_spin state pos_x pos_y ] checks if [state]'s falling tetromino 
+      satisfies the t_spin conditions *)
+  let is_mini_t_spin state pos_x pos_y =
+    let tet = state.falling in
+    if Tetromino.size tet <> 3 then false
+    else begin
+      let uLeft = value state (pos_y) (pos_x) in
+      let uRight = value state (pos_y+2) (pos_x) in
+      let dLeft = value state (pos_y) (pos_x) in
+      let dRight = value state (pos_y) (pos_x+2) in
+      match uLeft, uRight, dLeft, dRight with
+      | _, Static _, Static _, Static _ 
+      | Static _, _, Static _, Static _
+      | Static _, Static _, _, Static _
+      | Static _, Static _, Static _, _ -> true
+      | _ -> false
+    end
+
+  let place_piece state pos_x pos_y =
+    let spin_score_state =
+      if is_mini_t_spin state pos_x pos_y then 
+        {state with score = 100*state.level} else
+        state in 
+    for col = pos_x to pos_x + (Tetromino.size state.falling - 1) do
+      for row = pos_y to pos_y + (Tetromino.size state.falling - 1) do 
+        let new_val = Tetromino.value state.falling state.falling_rot 
+            (col - pos_x) (row - pos_y) in
+        if new_val <> None && (row - pos_y >= 0)
+        then 
+          state.playfield.(row).(col) <- new_val
+        else ()
+      done
+    done;
+    drop (clear_lines spin_score_state)
+
   let queue (state:t) : Tetromino.t list =
     state.queue
 
@@ -270,62 +288,51 @@ module Local : S = struct
     state.held
 
 
-
-
-
-
   (** [step state] is the [state] after the falling piece has stepped down. *)
   let step (state:t) : t =
     let pos_x, pos_y = state.falling_pos in
-    { 
+    let ext_adjust = if pos_y + 1 > state.min_row then 0 else 1
+    in { 
       state with falling_pos = (pos_x, pos_y + 1); step_delta = 0; 
-                 ext_placement = false; ext_placement_delta = 0; 
-                 ext_placement_move_count = 0;
+                 ext_placement_delta = state.ext_placement_delta * ext_adjust; 
+                 ext_placement_move_count = 
+                   state.ext_placement_move_count * ext_adjust;
+                 min_row = pos_y + 1
     }
 
   let update (state:t) (delta:int) (soft_drop:bool) : t =
     let new_delta = state.step_delta + delta * if soft_drop then 20 else 1 in
     let new_ext_delta = state.ext_placement_delta + delta in
-    let state = {state with step_delta=new_delta} in
+    let state = {state with step_delta = new_delta} in
     if state.step_delta >= state.fall_speed 
     then begin
-      let new_state = 
-        if soft_drop 
-        then {state with score= state.score+1} 
-        else state in
       if snd state.falling_pos <> state.ghost_row
-      then step new_state
+      then step {state with score = state.score + 1} 
       else begin 
-        if (new_ext_delta >= 500)
+        if new_ext_delta >= 500
         then place_piece state (fst state.falling_pos) (snd state.falling_pos)
         else {state with ext_placement_delta = new_ext_delta}
       end
     end
     else state
 
-
-
-
   let ext_placement_add state = 
+    let move_count_add =
+      if snd state.falling_pos = state.ghost_row then 1 else 0 in
     if state.ext_placement_move_count >= 15
-    then begin
-      (print_endline (Int.to_string (state.ext_placement_move_count + 1)));
-      (print_endline (Int.to_string state.ext_placement_delta));
+    then 
       {
         state with 
-        ext_placement_move_count = state.ext_placement_move_count + 1
+        ext_placement_move_count = 
+          state.ext_placement_move_count + move_count_add
       }
-    end
-    else begin
-      (print_endline (Int.to_string (state.ext_placement_move_count + 1)));
-      (print_endline (Int.to_string state.ext_placement_delta));
+    else 
       {
         state with 
-        ext_placement_move_count = state.ext_placement_move_count + 1;
+        ext_placement_move_count = 
+          state.ext_placement_move_count + move_count_add;
         ext_placement_delta = 0
       }
-    end
-
 
   let rotate (rotation:[`CCW | `CW]) (state:t) : t =
     let rot = state.falling_rot in
@@ -333,7 +340,8 @@ module Local : S = struct
     let rec test_rot = function
       | [] -> state
       | (x, y)::t ->
-        let check_pos = (x + fst state.falling_pos, y + snd state.falling_pos) in
+        let check_pos =
+          (x + fst state.falling_pos, y + snd state.falling_pos) in
         if legal state state.falling new_rot check_pos then
           let ext_state = ext_placement_add state in
           { ext_state with falling_rot = new_rot; falling_pos = check_pos}
@@ -352,25 +360,26 @@ module Local : S = struct
       |> update_ghost
     else state
 
-
   (** Comment up!*)
   let hold_drop state piece =
     let new_state = {state with falling = piece; falling_rot = 0} in
     drop_help new_state
-
 
   let hold (state:t) : t =
     match held state with
     | None ->
       let this_piece = state.falling in
       drop {state with held = Some this_piece; held_before = true}
-    | Some p ->
+    | Some piece ->
       if state.held_before 
       then state
-      else hold_drop {state with held = Some state.falling; held_before = true} p
+      else hold_drop
+          {state with held = Some state.falling; held_before = true} piece
 
   let hard_drop (state:t) : t =
-    place_piece state (fst state.falling_pos) state.ghost_row
+    place_piece 
+      {state with score = 2*(snd state.falling_pos - state.ghost_row)} 
+      (fst state.falling_pos) state.ghost_row
 
   let handle_events (f:event -> unit) (state:t) : t =
     List.iter f (List.rev state.events);

@@ -4,17 +4,17 @@ type event =
   | Drop
   | Locking
 
+(** The representation of an RGB color. *)
+type color = int * int * int
+
+(** The representation of a value from the playfield. *)
+type v =
+  | Empty
+  | Falling of color * int
+  | Static of color
+  | Ghost of color * int
+
 module type S = sig
-  (** The representation of an RGB color. *)
-  type color = int * int * int
-
-  (** The representation of a value from the playfield. *)
-  type v =
-    | Empty
-    | Falling of color * int
-    | Static of color
-    | Ghost of color * int
-
   (** The representation of a Tetris gamestate. *)
   type t
 
