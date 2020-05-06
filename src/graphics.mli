@@ -5,6 +5,6 @@ type t
     Should be called once before graphics is outputed. *)
 val init : bool -> string -> t
 
-(** [render ctx state] provides a graphical representation of [state] using
-    graphics context [ctx]. *)
-val render : t -> State.t -> unit
+(** [render ctx states] provides a graphical representation of all [states]
+    using graphics context [ctx]. *)
+val render : t -> State.t list -> unit

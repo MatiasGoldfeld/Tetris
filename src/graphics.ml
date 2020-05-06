@@ -14,6 +14,7 @@ type t = {
   bg_color : State.color;
   font : Ttf.font;
 }
+
 (** [unpack message result] is [value] if [result] is [Ok value]. Otherwise, it
     logs [message] along with the error, and exits the program. *)
 let unpack (message:string) (result:'a Sdl.result) : 'a =
@@ -86,10 +87,10 @@ let init (duck_mode:bool) (path:string) : t =
   |> unpack "Error setting renderer blend mode";
   Sdl.set_window_minimum_size window ~w:660 ~h:600;
   {
-    window=window;
-    renderer=renderer;
-    pixel_format=pixel_format;
-    duck_mode=duck_mode;
+    window = window;
+    renderer = renderer;
+    pixel_format = pixel_format;
+    duck_mode = duck_mode;
     duck_images = duck_path_dict path renderer Tetromino.colors 1;
     bg_color = (80, 80, 80);
     font = Ttf.open_font (path ^ "fonts/PTS55F.ttf") 60
@@ -212,7 +213,8 @@ let draw_game_info (ctx:t) (state:State.t) (size:int) (x,y:int*int) : unit =
   draw_text ctx size t_lines fg bg (x + x_offset, y + y_offset + size * 4);
   draw_text ctx size t_level fg bg (x + x_offset, y + y_offset + size * 6)
 
-let render (ctx:t) (state:State.t) : unit =
+let render (ctx:t) (states:State.t list) : unit =
+  let state = fst states in
   let w_desire, h_desire = 24, 20 in
   let w_true, h_true = Sdl.get_window_size ctx.window in
   let size = min (w_true / w_desire) (h_true / h_desire) in

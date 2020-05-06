@@ -34,6 +34,10 @@ and t = {
   in_menu : bool;
 }
 
+let state (game:t) : State.t = game.state
+
+let in_menu (game:t) : bool = game.in_menu
+
 (** [menu_inputs_press inputs (k, i)] maps key [k] to input [i] in [inputs]. *)
 let menu_inputs_press
     (inputs:menu_inputs_t)
@@ -99,7 +103,7 @@ let rec loop (game:t) : unit =
           let soft_sc = Sdl.get_scancode_from_key game.game_inputs.soft_drop in
           let soft = (Sdl.get_keyboard_state ()).{soft_sc} = 1 in
           State.update game.state delta soft in
-      Graphics.render game.graphics state;
+      Graphics.render game.graphics [game.state];
       { game with state = state; last_update = time }
     else
       game
