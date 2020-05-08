@@ -90,6 +90,24 @@ let defaults : t list = [
   };
 ]
 
+(** [get_tet_helper str lst] returns the tetromino with name str in list. This 
+    is for testing purposes only. *)
+let rec get_tet_helper str lst =
+  match lst with
+  | [] -> 
+    { (* i tetromino *)
+      tetromino_type = "i";
+      color = (0, 255, 255);
+      shape = [[0;0;0;0];[1;1;1;1];[0;0;0;0];[0;0;0;0]];
+      wall_kicks = wall_kicks_4;
+    }
+  | h::t -> if str = h.tetromino_type then h else get_tet_helper str t
+
+
+let get_tet str =
+  get_tet_helper str defaults 
+
+
 let size (piece:t) : int =
   List.length piece.shape
 

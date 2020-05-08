@@ -15,6 +15,9 @@ type v =
 
 module type S = sig
   type t
+  val make_test_state : int -> int -> int -> int-> int -> int -> int -> int ->
+    event list -> Tetromino.t list -> Tetromino.t option -> bool -> Tetromino.t 
+    -> int -> int * int -> int -> color option array array -> t
   val pauseable : bool
   val init : int -> int -> int -> t
   val score : t -> int
@@ -61,6 +64,32 @@ module Local : S = struct
        already placed on the playfield are represented here. *)
     playfield : color option array array
   }
+
+  let make_test_state scoret linest levelt fall_speedt step_deltat 
+      ext_placement_move_countt ext_placement_deltat min_rowt eventst queuet 
+      heldt held_beforet fallingt falling_rott falling_post ghost_rowt 
+      playfieldt = 
+    {
+      score = scoret;
+      lines = linest;
+      level = levelt;
+      fall_speed = fall_speedt;
+      step_delta = step_deltat;
+      ext_placement_move_count = ext_placement_move_countt;
+      ext_placement_delta = ext_placement_deltat;
+      min_row = min_rowt;
+      events = eventst;
+      queue = queuet;
+      held = heldt;
+      held_before = held_beforet;
+      falling = fallingt;
+      falling_rot = falling_rott;
+      falling_pos = falling_post;
+      ghost_row = ghost_rowt;
+      playfield = playfieldt
+    }
+
+
 
   let pauseable = false
 

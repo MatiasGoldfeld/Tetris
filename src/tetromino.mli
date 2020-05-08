@@ -14,6 +14,10 @@ val colors: color list
 (** [max_size] is the maximum size of the default tetrominoes. *)
 val max_size : int
 
+(** [get_tet str] returns the tetromino with name str. If it does not recognize
+    the string it returns the i piece. *)
+val get_tet : string -> t
+
 (** [value piece rot c r] is the grid value of [piece] where [rot] is the
     rotation from 0 to 3, and [(c, r)] are the coordinates. *)
 val value : t -> int -> int -> int -> (int * int * int) option
