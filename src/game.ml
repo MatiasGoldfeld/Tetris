@@ -18,6 +18,13 @@ type game_input =
   | GHard
   | GHold
 
+type game_state =
+  | MainMenu
+  | Playing
+  | GameMenu
+  | Gameover
+  | GameoverHighscore
+
 module type Button = sig
   type t
   val onPress : t -> t
@@ -34,24 +41,26 @@ end
 module Make (S : State.S) = struct
   module GR = Graphics.MakeGameRenderer (S)
 
-  type menu_inputs_t = (Sdl.keycode, (t -> t) * bool) Hashtbl.t
+  type inputs_t = (Sdl.keycode, (t -> t) * bool) Hashtbl.t
+  and menu_inputs_t = inputs_t
   and game_inputs_t = {
-    event_driven : (Sdl.keycode, (t -> t) * bool) Hashtbl.t;
+    event_driven : inputs_t;
     mutable soft_drop : Sdl.keycode;
   }
 
   and t = {
-    state : S.t;
+    state : game_state;
+    play_state : S.t;
     last_update : int;
     menu_inputs : menu_inputs_t;
     game_inputs : game_inputs_t;
     audio : Audio.t;
     graphics : Graphics.t;
-    menu: Menu.t;
-    in_menu : bool;
+    menu : Menu.t;
+
   }
 
-  let in_menu (game:t) : bool = game.in_menu
+  let in_menu (game:t) : bool = game.state = GameMenu
 
   (** [menu_inputs_press inputs (k, i)] maps key [k] to
       input [i] in [inputs]. *)
@@ -60,7 +69,7 @@ module Make (S : State.S) = struct
       (k, i:Sdl.keycode * menu_input) : unit =
     let add = Hashtbl.add inputs in
     match i with
-    | MMenu  -> add k ((fun x -> {x with in_menu = false}), false)
+    | MMenu  -> add k ((fun x -> {x with state = Playing}), false)
     | MLeft  -> ()
     | MRight -> ()
     | MUp    -> ()
@@ -73,9 +82,9 @@ module Make (S : State.S) = struct
       (inputs:game_inputs_t)
       (k, i:Sdl.keycode * game_input) : unit =
     let add = Hashtbl.add inputs.event_driven in
-    let state_fun f game = {game with state = f game.state} in
+    let state_fun f game = {game with play_state = f game.play_state} in
     match i with
-    | GMenu  -> add k ((fun x -> {x with in_menu = true}), false)
+    | GMenu  -> add k ((fun x -> {x with state = GameMenu}), false)
     | GLeft  -> add k (state_fun (S.move `Left), true)
     | GRight -> add k (state_fun (S.move `Right), true)
     | GCW    -> add k (state_fun (S.rotate `CW), false)
@@ -84,28 +93,26 @@ module Make (S : State.S) = struct
     | GHard  -> add k (state_fun (S.hard_drop), false)
     | GHold  -> add k (state_fun (S.hold), false)
 
-  let rec handle_events (game:t) : t =
+  let rec handle_events (inputs:inputs_t) (game:t) : t =
     let event = Sdl.Event.create () in
     if not (Sdl.poll_event (Some event)) then game
-    else handle_events begin
+    else handle_events inputs begin
         match Sdl.Event.(enum (get event typ)) with
         | `Key_down ->
           let key = Sdl.Event.(get event keyboard_keycode) in
           let repeat = Sdl.Event.(get event keyboard_repeat) <> 0 in
-          let table = if game.in_menu
-            then game.menu_inputs
-            else game.game_inputs.event_driven
-          in if Hashtbl.mem table key then
-            let action, repeatable = Hashtbl.find table key in
+          if Hashtbl.mem inputs key then
+            let action, repeatable = Hashtbl.find inputs key in
             if repeatable || not repeat then
               action game
             else game
           else game
         | `Mouse_button_down ->
-          let click_coords = (Sdl.Event.(get event mouse_button_x), 
-                              Sdl.Event.(get event mouse_button_x)) in 
-          let menu = Menu.mouse_clicked game.menu click_coords in
-          {game with menu = menu};
+          if game.state <> MainMenu then game else
+            let click_coords = (Sdl.Event.(get event mouse_button_x), 
+                                Sdl.Event.(get event mouse_button_x)) in 
+            let menu = Menu.mouse_clicked game.menu click_coords in
+            { game with menu = menu }
         | `Quit ->
           Sdl.log "Quit event handled";
           Sdl.quit ();
@@ -115,27 +122,35 @@ module Make (S : State.S) = struct
 
   let rec loop (game:t) : unit =
     Audio.loop_music game.audio;
-    let game = handle_events game in
+    let inputs = match game.state with 
+      | MainMenu -> Hashtbl.create 0
+      | Playing -> game.game_inputs.event_driven
+      | GameMenu -> game.menu_inputs
+      | Gameover -> Hashtbl.create 0
+      | GameoverHighscore -> Hashtbl.create 0
+    in
+    let game = handle_events inputs game in
     let time = Int32.to_int (Sdl.get_ticks ()) in
     let delta = (time - game.last_update) in
     let game =
-      if delta >= 1000 / 60 then
-        if game.in_menu then begin
+      if delta < 1000 / 60 then game else
+        match game.state with
+        | MainMenu ->
           let menu = let buttons = Graphics.render_menu game.graphics game.menu in
             Menu.set_multiplayer_buttons game.menu buttons in
-          {game with menu = menu};
-        end
-        else
-          let state =
+          {game with menu = menu}
+        | Gameover -> game
+        | GameoverHighscore -> game
+        | Playing | GameMenu ->
+          let play_state =
             let soft_sc = Sdl.get_scancode_from_key
                 game.game_inputs.soft_drop in
             let soft = (Sdl.get_keyboard_state ()).{soft_sc} = 1 in
-            S.update game.state delta soft in begin
-            GR.render game.graphics [game.state];
-            { game with state = state; last_update = time }
-          end
-      else
-        game
+            if game.state = GameMenu && S.pauseable
+            then game.play_state
+            else S.update game.play_state delta soft
+          in GR.render game.graphics [game.play_state];
+          { game with play_state = play_state; last_update = time }
     in loop game
 
   let init (level:int)
@@ -152,13 +167,13 @@ module Make (S : State.S) = struct
     List.iter (menu_inputs_press menu_inputs) menu_controls;
     List.iter (game_inputs_press game_inputs) game_controls;
     loop {
-      state = (S.init 10 20 level);
+      state = Playing;
+      play_state = S.init 10 20 level;
       last_update = Int32.to_int (Sdl.get_ticks ());
       menu_inputs = menu_inputs;
       game_inputs = game_inputs;
       audio = audio;
       graphics = graphics;
       menu = menu;
-      in_menu = false;
     }
 end
