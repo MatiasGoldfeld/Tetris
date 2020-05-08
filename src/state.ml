@@ -15,6 +15,7 @@ type v =
 
 module type S = sig
   type t
+  exception Gameover of t
   val make_test_state : int -> int -> int -> int-> int -> int -> int -> int ->
     event list -> Tetromino.t list -> Tetromino.t option -> bool -> Tetromino.t 
     -> int -> int * int -> int -> color option array array -> t
@@ -64,6 +65,8 @@ module Local : S = struct
        already placed on the playfield are represented here. *)
     playfield : color option array array
   }
+
+  exception Gameover of t
 
   let make_test_state scoret linest levelt fall_speedt step_deltat 
       ext_placement_move_countt ext_placement_deltat min_rowt eventst queuet 
@@ -174,7 +177,7 @@ module Local : S = struct
                        ext_placement_move_count = 0; 
                        ext_placement_delta = 0;
                        min_row = -1} |> update_ghost
-      else failwith "gameover"
+      else raise (Gameover state)
     end
 
   (** [drop piece state] is the [state] with a new piece initialized as the 
@@ -194,27 +197,54 @@ module Local : S = struct
     let fall_speed = 1000. *. (0.8 -. (level_f *. 0.007)) ** level_f in
     { state with fall_speed = Float.to_int fall_speed }
 
+  let rec make_test_array_help lst arr =
+    match lst with
+    | [] -> arr
+    | h::t -> 
+      let rows = fst h in
+      let columns = snd h in
+      for i = fst rows to snd rows do
+        for j = fst columns to snd columns do
+          arr.(i).(j) <- Some (0, 255, 255)
+        done
+      done;
+      make_test_array_help t arr
+
+  (** [make_test_array ranges] is the array filled with arbitrary color values
+      in the rows with ranges first tuple, and columns being the second tuple of 
+      values for the whole list.  *)
+  let make_test_array (ranges : ((int*int)*(int*int)) list) = 
+    let arr = Array.make_matrix 20 10 None in
+    make_test_array_help ranges arr
+
+
+  let test_state_6  = make_test_state 0 0 1 0 0 0 0 0 [] [] None 
+      false (Tetromino.get_tet "i") 0 (8, 0) 8 
+      (make_test_array [((10,19),(0,8))])
+
+
   let init (width:int) (height:int) (level:int) : t =
     let queue = shuffle Tetromino.defaults in
-    {
-      score = 0;
-      lines = 0;
-      level = level;
-      fall_speed = -1;
-      step_delta = 0;
-      ext_placement_move_count = 0;
-      ext_placement_delta = 0;
-      min_row = -1;
-      events = [];
-      queue = List.tl queue;
-      held = None;
-      held_before = false;
-      falling = List.hd queue;
-      falling_rot = -1;
-      falling_pos = -1, -1;
-      ghost_row = -1;
-      playfield = Array.make_matrix height width None
-    }
+    {test_state_6 with queue = (Tetromino.get_tet "i") :: queue}
+    (* {
+       score = 0;
+       lines = 0;
+       level = level;
+       fall_speed = -1;
+       step_delta = 0;
+       ext_placement_move_count = 0;
+       ext_placement_delta = 0;
+       min_row = -1;
+       events = [];
+       queue = queue;
+       held = None;
+       held_before = false;
+       falling = List.hd queue;
+       falling_rot = -1;
+       falling_pos = -1, -1;
+       ghost_row = -1;
+       playfield = Array.make_matrix height width None
+       } *)
     |> drop
     |> recalculate_fall_speed
 
