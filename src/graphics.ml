@@ -162,12 +162,12 @@ let render_button (ctx:t) x y w h (border:int) = begin
   fill_rect rect ctx;
 end
 
-let render_button_option ctx (x, y) (w, h) label = begin
+let render_button_option ctx (x, y) (w, h) (label:string) : (string * Menu.button) = begin
   render_button ctx x y w h 2;
   let bg = Sdl.Color.create 100 100 100 0 in
   let fg = Sdl.Color.create 200 200 200 0 in
   draw_text ctx 18 label bg fg (x+(w*2),(y-9));
-  Menu.make_button label (x,y) (w,h);
+  (label, Menu.make_button (x,y) (w,h));
 end
 
 let render_menu (ctx:t) (menu:Menu.t) = begin

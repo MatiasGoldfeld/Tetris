@@ -1,7 +1,4 @@
-
-
 type button = {
-  label: string;
   coords: (int*int);
   dimensions: (int*int);
   selected: bool;
@@ -9,13 +6,12 @@ type button = {
 
 type t = {
   multiplayer: bool;
-  buttons: button list;
+  buttons: (string*button) list;
   volume: float;
   level: int;
 }
 
 let init_empty_button () = {
-  label= "";
   coords= (0,0);
   dimensions = (0,0);
   selected= false;
@@ -28,16 +24,15 @@ let init () = {
   level= 0
 }
 
-let make_button (label:string) 
+let make_button 
     (coords:int*int) (dimensions:int*int) =
   {
-    label = label;
     coords = coords;
     dimensions = dimensions;
     selected = false;
   }
 
-let set_multiplayer_buttons (menu:t) (buttons:button list) =
+let set_multiplayer_buttons (menu:t) (buttons:(string*button) list) =
   {menu with buttons = buttons}
 
 let in_button button click_coords : bool = 
@@ -50,12 +45,11 @@ let in_button button click_coords : bool =
   in_x_range && in_y_range
 
 let mouse_clicked menu click_coords =
-  { menu with buttons = List.map (fun button -> 
+  { menu with buttons = List.map (fun (label, button) -> 
         if in_button button click_coords then begin
-          print_endline button.label;
-          {button with selected= not button.selected}
+          (label, {button with selected= not button.selected})
         end
-        else button) 
+        else (label, button))
         menu.buttons 
   }
 

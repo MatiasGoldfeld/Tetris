@@ -7,7 +7,7 @@ val init : bool -> string -> t
 
 (** [render_menu ctx menu] renders the menu and gives a representation of the
     buttons in the menu *)
-val render_menu : t -> Menu.t -> Menu.button list
+val render_menu : t -> Menu.t -> (string*Menu.button) list
 
 module type GameRenderer = sig
   module S : State.S
