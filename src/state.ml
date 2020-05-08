@@ -15,6 +15,7 @@ type v =
 
 module type S = sig
   type t
+  exception Gameover of t
   val make_test_state : int -> int -> int -> int-> int -> int -> int -> int ->
     event list -> Tetromino.t list -> Tetromino.t option -> bool -> Tetromino.t 
     -> int -> int * int -> int -> color option array array -> t
@@ -64,6 +65,8 @@ module Local : S = struct
        already placed on the playfield are represented here. *)
     playfield : color option array array
   }
+
+  exception Gameover of t
 
   let make_test_state scoret linest levelt fall_speedt step_deltat 
       ext_placement_move_countt ext_placement_deltat min_rowt eventst queuet 
@@ -174,7 +177,7 @@ module Local : S = struct
                        ext_placement_move_count = 0; 
                        ext_placement_delta = 0;
                        min_row = -1} |> update_ghost
-      else failwith "gameover"
+      else raise (Gameover state)
     end
 
   (** [drop piece state] is the [state] with a new piece initialized as the 
@@ -194,6 +197,8 @@ module Local : S = struct
     let fall_speed = 1000. *. (0.8 -. (level_f *. 0.007)) ** level_f in
     { state with fall_speed = Float.to_int fall_speed }
 
+
+
   let init (width:int) (height:int) (level:int) : t =
     let queue = shuffle Tetromino.defaults in
     {
@@ -206,7 +211,7 @@ module Local : S = struct
       ext_placement_delta = 0;
       min_row = -1;
       events = [];
-      queue = List.tl queue;
+      queue = queue;
       held = None;
       held_before = false;
       falling = List.hd queue;

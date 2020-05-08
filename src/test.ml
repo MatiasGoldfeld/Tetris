@@ -66,8 +66,17 @@ let test_state_4 : TestS.t = TestS.make_test_state 0 0 1 0 0 0 0 0 [] [] None
 let test_state_5 : TestS.t = TestS.make_test_state 0 0 1 0 0 0 0 0 [] [] None 
     false (Tetromino.get_tet "t") 0 (7, 0) 18 (Array.make_matrix 20 10 None)
 
-let test_state_5 : TestS.t = TestS.make_test_state 0 0 1 0 0 0 0 0 [] [] None 
-    false (Tetromino.get_tet "t") 0 (7, 0) 18 (make_test_array [])
+let test_state_6 : TestS.t = TestS.make_test_state 0 0 1 0 0 0 0 0 [] [] None 
+    false (Tetromino.get_tet "i") 1 (7, 13)  16
+    (make_test_array [((10,19),(0,8))])
+
+let test_state_71 : TestS.t = TestS.make_test_state 0 0 1 0 0 0 0 0 [] [] None 
+    false (Tetromino.get_tet "t") 0 (4, 18) 18 (Array.make_matrix 20 10 None)
+
+let test_state_72 : TestS.t = TestS.make_test_state 0 0 1 0 0 1 0 0 [] [] None 
+    false (Tetromino.get_tet "t") 1 (3, 17) 17 (Array.make_matrix 20 10 None)
+
+
 
 
 let movement_tests = [
@@ -77,6 +86,10 @@ let movement_tests = [
   make_move_test "Move Right fail" test_state_5 `Right test_state_5;
   make_rotate_test "Rotate Clock Wise" test_state_1 `CW test_state_3;
   make_rotate_test "Rotate Counter Clock Wise" test_state_3 `CCW test_state_1;
+  make_rotate_test "Rotate Clock Wise fail" test_state_6 `CW test_state_6;
+  make_rotate_test "Rotate Counter Clock Wise fail" test_state_6 `CCW 
+    test_state_6;
+  make_rotate_test "Floor kick 3x3 test" test_state_71 `CW test_state_72
 ]
 
 
