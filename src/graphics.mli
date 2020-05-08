@@ -5,6 +5,8 @@ type t
     Should be called once before graphics is outputed. *)
 val init : bool -> string -> t
 
+val render_menu : t -> Menu.t -> unit
+
 module type GameRenderer = sig
   module S : State.S
   (** [render ctx states] provides a graphical representation of all [states]
@@ -14,3 +16,5 @@ end
 
 module MakeGameRenderer (S : State.S) :
   GameRenderer with module S = S
+
+

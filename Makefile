@@ -1,4 +1,4 @@
-MODULES=audio game graphics main state tetromino
+MODULES=audio game graphics main menu state tetromino
 PKGS=tsdl,tsdl_mixer,tsdl_ttf,tsdl_image
 SRC=src/
 PATHS=$(addprefix $(SRC), $(MODULES))

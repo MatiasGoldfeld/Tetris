@@ -21,7 +21,7 @@ type game_input =
 module type S = sig
   type t
   val init : int -> (Sdl.keycode * menu_input) list ->
-    (Sdl.keycode * game_input) list -> Audio.t -> Graphics.t -> unit
+    (Sdl.keycode * game_input) list -> Audio.t -> Graphics.t -> Menu.t -> unit
   val in_menu : t -> bool
 end
 
@@ -41,6 +41,7 @@ module Make (S : State.S) = struct
     game_inputs : game_inputs_t;
     audio : Audio.t;
     graphics : Graphics.t;
+    menu: Menu.t;
     in_menu : bool;
   }
 
@@ -104,26 +105,32 @@ module Make (S : State.S) = struct
   let rec loop (game:t) : unit =
     Audio.loop_music game.audio;
     let game = handle_events game in
-    let time = Int32.to_int (Sdl.get_ticks ()) in
-    let delta = (time - game.last_update) in
-    let game =
-      if delta >= 1000 / 60 then
-        let state = if game.in_menu then game.state
-          else
-            let soft_sc = Sdl.get_scancode_from_key
-                game.game_inputs.soft_drop in
-            let soft = (Sdl.get_keyboard_state ()).{soft_sc} = 1 in
-            S.update game.state delta soft in
-        GR.render game.graphics [game.state];
-        { game with state = state; last_update = time }
-      else
-        game
-    in loop game
+    if game.in_menu then begin
+      Graphics.render_menu game.graphics game.menu;
+      loop game;
+    end 
+    else
+      let game = handle_events game in
+      let time = Int32.to_int (Sdl.get_ticks ()) in
+      let delta = (time - game.last_update) in
+      let game =
+        if delta >= 1000 / 60 then
+          let state = if game.in_menu then game.state
+            else
+              let soft_sc = Sdl.get_scancode_from_key
+                  game.game_inputs.soft_drop in
+              let soft = (Sdl.get_keyboard_state ()).{soft_sc} = 1 in
+              S.update game.state delta soft in
+          GR.render game.graphics [game.state];
+          { game with state = state; last_update = time }
+        else
+          game
+      in loop game
 
   let init (level:int)
       (menu_controls:(Sdl.keycode * menu_input) list)
       (game_controls:(Sdl.keycode * game_input) list)
-      (audio:Audio.t) (graphics:Graphics.t)=
+      (audio:Audio.t) (graphics:Graphics.t) (menu:Menu.t)=
     Random.self_init ();
     Audio.start_music audio;
     let menu_inputs = Hashtbl.create 6 in
@@ -140,6 +147,7 @@ module Make (S : State.S) = struct
       game_inputs = game_inputs;
       audio = audio;
       graphics = graphics;
+      menu = menu;
       in_menu = false;
     }
 end

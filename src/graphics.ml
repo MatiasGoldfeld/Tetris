@@ -115,6 +115,17 @@ let draw_tetromino (ctx:t) (piece:Tetromino.t) (rot:int) (x:int) (y:int)
     done
   done
 
+let render_menu (ctx:t) (menu:Menu.t) =
+  let (w,h) = Sdl.get_window_size ctx.window in
+  let menu_w = (int_of_float(0.5*.(float_of_int w))) in
+  let menu_h = (int_of_float(0.5*.(float_of_int h))) in
+  let x = (float_of_int menu_w)/.2.0 |> int_of_float in
+  let y = (float_of_int menu_h)/.2.0 |> int_of_float in
+  let rect = Sdl.Rect.create x y  menu_w menu_h in
+  set_color (255, 255, 255) ctx;
+  fill_rect rect ctx;
+  Sdl.render_present ctx.renderer;
+
 module type GameRenderer = sig
   module S : State.S
   val render : t -> S.t list -> unit
@@ -123,8 +134,8 @@ end
 module MakeGameRenderer (S : State.S) = struct
   module S = S
 
-  (** [draw_playfield ctx state pos size] renders the playfield of [state]
-      at [pos]with a tile length of [size] in graphics context [ctx]. *)
+  (**   [draw_playfield ctx state pos size] renders the playfield of [state]
+        at [pos]with a tile length of [size] in graphics context [ctx]. *)
   let draw_playfield (ctx:t) (state:S.t) (x,y:int*int) (size:int) : unit =
     let rows = S.field_height state in
     let cols = S.field_width state in
