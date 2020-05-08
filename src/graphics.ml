@@ -141,7 +141,7 @@ let render_title (ctx:t) (title: string) (x:int) (y:int) = begin
   let w_true, h_true = Sdl.get_window_size ctx.window in
   let size = min (w_true / w_desire) (h_true / h_desire) in
   let text = title in
-  let surf = Ttf.render_text_shaded ctx.font text fg bg
+  let surf = Ttf.render_text_solid ctx.font text fg
              |> unpack "Failed to render TTF" in
   let texture = surf
                 |> Sdl.create_texture_from_surface ctx.renderer

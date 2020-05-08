@@ -105,27 +105,26 @@ module Make (S : State.S) = struct
   let rec loop (game:t) : unit =
     Audio.loop_music game.audio;
     let game = handle_events game in
-    if game.in_menu then begin
-      Graphics.render_menu game.graphics game.menu;
-      loop game;
-    end 
-    else
-      let game = handle_events game in
-      let time = Int32.to_int (Sdl.get_ticks ()) in
-      let delta = (time - game.last_update) in
-      let game =
-        if delta >= 1000 / 60 then
-          let state = if game.in_menu then game.state
-            else
-              let soft_sc = Sdl.get_scancode_from_key
-                  game.game_inputs.soft_drop in
-              let soft = (Sdl.get_keyboard_state ()).{soft_sc} = 1 in
-              S.update game.state delta soft in
-          GR.render game.graphics [game.state];
-          { game with state = state; last_update = time }
+    let time = Int32.to_int (Sdl.get_ticks ()) in
+    let delta = (time - game.last_update) in
+    let game =
+      if delta >= 1000 / 60 then
+        if game.in_menu then begin
+          Graphics.render_menu game.graphics game.menu;
+          game;
+        end
         else
-          game
-      in loop game
+          let state =
+            let soft_sc = Sdl.get_scancode_from_key
+                game.game_inputs.soft_drop in
+            let soft = (Sdl.get_keyboard_state ()).{soft_sc} = 1 in
+            S.update game.state delta soft in begin
+            GR.render game.graphics [game.state];
+            { game with state = state; last_update = time }
+          end
+      else
+        game
+    in loop game
 
   let init (level:int)
       (menu_controls:(Sdl.keycode * menu_input) list)
