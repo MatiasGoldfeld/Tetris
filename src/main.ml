@@ -8,6 +8,7 @@ let main () =
   | Ok () ->
     let audio = Audio.init "./resources/audio/" in
     let graphics = Graphics.init true "./resources/"  in
+    let menu = Menu.init () in
     Audio.adjust_music audio 0.05;
     let menu_controls = [
       (Sdl.K.escape,   Game.MMenu);
@@ -28,7 +29,7 @@ let main () =
       (Sdl.K.space,  Game.GHard);
       (Sdl.K.c,      Game.GHold);
     ] in
-    LocalGame.init 1 menu_controls game_controls audio graphics;
+    LocalGame.init 1 menu_controls game_controls audio graphics menu;
     Sdl.quit ();
     exit 0
 

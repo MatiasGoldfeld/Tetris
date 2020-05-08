@@ -296,7 +296,7 @@ module Local : S = struct
   let place_piece state pos_x pos_y =
     let spin_score_state =
       if is_mini_t_spin state pos_x pos_y then 
-        {state with score = 100*state.level} else
+        {state with score = state.score+100*state.level} else
         state in 
     for col = pos_x to pos_x + (Tetromino.size state.falling - 1) do
       for row = pos_y to pos_y + (Tetromino.size state.falling - 1) do 
@@ -336,7 +336,9 @@ module Local : S = struct
     if state.step_delta >= state.fall_speed 
     then begin
       if snd state.falling_pos <> state.ghost_row
-      then step {state with score = state.score + 1} 
+      then step {state with score = 
+                              if soft_drop then state.score + 1 
+                              else state.score } 
       else begin 
         if new_ext_delta >= 500
         then place_piece state (fst state.falling_pos) (snd state.falling_pos)
