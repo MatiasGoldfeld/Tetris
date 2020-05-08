@@ -115,15 +115,72 @@ let draw_tetromino (ctx:t) (piece:Tetromino.t) (rot:int) (x:int) (y:int)
     done
   done
 
-let render_menu (ctx:t) (menu:Menu.t) =
-  let (w,h) = Sdl.get_window_size ctx.window in
-  let menu_w = (int_of_float(0.5*.(float_of_int w))) in
-  let menu_h = (int_of_float(0.5*.(float_of_int h))) in
-  let x = (float_of_int menu_w)/.2.0 |> int_of_float in
-  let y = (float_of_int menu_h)/.2.0 |> int_of_float in
-  let rect = Sdl.Rect.create x y  menu_w menu_h in
-  set_color (255, 255, 255) ctx;
+(** [draw_text ctx size text fg bg pos] draws [text] with size [size] at
+      coordinates [pos] using [ctx], with a foreground color of [fg] and a
+      background color of [bg]. *)
+let draw_text (ctx:t) (size:int) (text:string) (fg:Sdl.color) (bg:Sdl.color)
+    (x,y:int*int) : unit =
+  let surf = Ttf.render_text_shaded ctx.font text fg bg
+             |> unpack "Failed to render TTF" in
+  let texture = surf
+                |> Sdl.create_texture_from_surface ctx.renderer
+                |> unpack "Failed to create texture from font surface" in
+  let _, _, (score_w, score_h) = Sdl.query_texture texture
+                                 |> unpack "Failed to query texture" in
+  let score_w, score_h = score_w * size / 60, score_h * size / 60 in
+  let score_rect = Sdl.Rect.create x y score_w score_h in
+  Sdl.render_copy ~dst:score_rect ctx.renderer texture
+  |> unpack "Failed to copy text texture onto screen";
+  Sdl.free_surface surf;
+  Sdl.destroy_texture texture
+
+let render_title (ctx:t) (title: string) (x:int) (y:int) = begin
+  let bg = Sdl.Color.create 100 100 100 0 in
+  let fg = Sdl.Color.create 200 200 200 0 in
+  let w_desire, h_desire = 24, 20 in
+  let w_true, h_true = Sdl.get_window_size ctx.window in
+  let size = min (w_true / w_desire) (h_true / h_desire) in
+  let text = title in
+  let surf = Ttf.render_text_shaded ctx.font text fg bg
+             |> unpack "Failed to render TTF" in
+  let texture = surf
+                |> Sdl.create_texture_from_surface ctx.renderer
+                |> unpack "Failed to create texture from font surface" in
+  let _, _, (title_w, title_h) = Sdl.query_texture texture
+                                 |> unpack "Failed to query texture" in
+  let title_w, title_h = title_w * size / 60, title_h * size / 60 in
+  let x_offset = x/2+(title_w/4) in
+  draw_text ctx size text fg bg (x+x_offset, y);
+end
+
+let make_button (ctx:t) x y w h (border:int) = begin
+  set_color (0, 0, 0) ctx; 
+  let outline = Sdl.Rect.create (x-(border)/2) (y-(border)/2) (w+border) (h+border) in
+  fill_rect outline ctx;
+  set_color (255, 255, 255) ctx; 
+  let rect = Sdl.Rect.create x y w h in
   fill_rect rect ctx;
+end
+
+let make_button_option ctx x y w h label = begin
+  make_button ctx x y w h 2;
+  let bg = Sdl.Color.create 100 100 100 0 in
+  let fg = Sdl.Color.create 200 200 200 0 in
+  draw_text ctx 18 label bg fg (x+(w*2),(y-9));
+end
+
+let render_menu (ctx:t) (menu:Menu.t) =
+  set_color (178, 249, 255) ctx; 
+  let (w,h) = Sdl.get_window_size ctx.window in
+  let menu_w = w/2 in
+  let menu_h = h/2 in
+  let x = menu_w/2 in
+  let y = menu_h/2 in
+  let rect = Sdl.Rect.create x y menu_w menu_h in
+  fill_rect rect ctx;
+  render_title ctx "DUCKTRIS" x y;
+  let x_offset = x/2 in
+  make_button_option ctx (x+x_offset) ((3*y)/2) 10 10 "Multiplayer";
   Sdl.render_present ctx.renderer;
 
 module type GameRenderer = sig
