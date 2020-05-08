@@ -18,6 +18,12 @@ type game_input =
   | GHard
   | GHold
 
+module type Button = sig
+  type t
+  val onPress : t -> t
+  val coords : t -> (int*int)
+end
+
 module type S = sig
   type t
   val init : int -> (Sdl.keycode * menu_input) list ->
@@ -95,6 +101,11 @@ module Make (S : State.S) = struct
               action game
             else game
           else game
+        | `Mouse_button_down ->
+          let click_coords = (Sdl.Event.(get event mouse_button_x), 
+                              Sdl.Event.(get event mouse_button_x)) in 
+          let menu = Menu.mouse_clicked game.menu click_coords in
+          {game with menu = menu};
         | `Quit ->
           Sdl.log "Quit event handled";
           Sdl.quit ();
@@ -110,8 +121,9 @@ module Make (S : State.S) = struct
     let game =
       if delta >= 1000 / 60 then
         if game.in_menu then begin
-          Graphics.render_menu game.graphics game.menu;
-          game;
+          let menu = let buttons = Graphics.render_menu game.graphics game.menu in
+            Menu.set_multiplayer_buttons game.menu buttons in
+          {game with menu = menu};
         end
         else
           let state =

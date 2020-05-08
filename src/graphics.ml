@@ -153,7 +153,7 @@ let render_title (ctx:t) (title: string) (x:int) (y:int) = begin
   draw_text ctx size text fg bg (x+x_offset, y);
 end
 
-let make_button (ctx:t) x y w h (border:int) = begin
+let render_button (ctx:t) x y w h (border:int) = begin
   set_color (0, 0, 0) ctx; 
   let outline = Sdl.Rect.create (x-(border)/2) (y-(border)/2) (w+border) (h+border) in
   fill_rect outline ctx;
@@ -162,14 +162,15 @@ let make_button (ctx:t) x y w h (border:int) = begin
   fill_rect rect ctx;
 end
 
-let make_button_option ctx x y w h label = begin
-  make_button ctx x y w h 2;
+let render_button_option ctx (x, y) (w, h) label = begin
+  render_button ctx x y w h 2;
   let bg = Sdl.Color.create 100 100 100 0 in
   let fg = Sdl.Color.create 200 200 200 0 in
   draw_text ctx 18 label bg fg (x+(w*2),(y-9));
+  Menu.make_button label (x,y) (w,h);
 end
 
-let render_menu (ctx:t) (menu:Menu.t) =
+let render_menu (ctx:t) (menu:Menu.t) = begin
   set_color (178, 249, 255) ctx; 
   let (w,h) = Sdl.get_window_size ctx.window in
   let menu_w = w/2 in
@@ -180,8 +181,12 @@ let render_menu (ctx:t) (menu:Menu.t) =
   fill_rect rect ctx;
   render_title ctx "DUCKTRIS" x y;
   let x_offset = x/2 in
-  make_button_option ctx (x+x_offset) ((3*y)/2) 10 10 "Multiplayer";
-  Sdl.render_present ctx.renderer;
+  let button = render_button_option ctx ((x+x_offset), ((3*y)/2)) 
+      (10, 10) "Multiplayer" in begin
+    Sdl.render_present ctx.renderer;
+    [button];
+  end
+end
 
 module type GameRenderer = sig
   module S : State.S
