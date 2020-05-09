@@ -7,7 +7,7 @@ let main () =
   | Error (`Msg e) -> Sdl.log "Main init error: %s" e; exit 1
   | Ok () ->
     let audio = Audio.init "./resources/audio/" in
-    let graphics = Graphics.init true "./resources/"  in
+    let graphics = Graphics.init false "./resources/"  in
     let menu = Menu.init () in
     Audio.adjust_music audio 0.05;
     let menu_controls = [

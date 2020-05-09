@@ -276,7 +276,9 @@ module Local : S = struct
         if c >= fall_c && c - fall_c < Tetromino.size state.falling then
           let check = Tetromino.value tet fall_rot (c - fall_c) in
           match check (r - fall_r) with
-          | Some color -> Falling (color, 255)
+          | Some color ->
+            let a = (500 - state.ext_placement_delta) * 255 / 500 in
+            Falling (color, a)
           | None ->
             match check (r - state.ghost_row) with
             | Some color -> Ghost (color, 95)

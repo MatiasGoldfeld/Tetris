@@ -9,6 +9,9 @@ val init : bool -> string -> t
     buttons in the menu *)
 val render_menu : t -> Menu.t -> (string*Menu.button) list
 
+(** [toggle_duck ctx] is [ctx] with the duck rendering option toggled. *)
+val toggle_duck : t -> t
+
 module type GameRenderer = sig
   module S : State.S
   (** [render ctx states menu] provides a graphical representation of all
