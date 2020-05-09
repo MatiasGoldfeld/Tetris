@@ -173,6 +173,24 @@ let render_button_option ctx menu (x, y) (w, h) (label:string) selected = begin
   Menu.get_button menu label |> Menu.update_button (x,y) (w,h);
 end
 
+let render_buttons (ctx:t) (menu:Menu.t) (coords:int*int) : Menu.t = begin
+  let (x,y) = coords in
+  let x_offset = x/2 in
+  let buttons = Menu.buttons menu in
+  let updated_buttons = List.mapi (fun i (label, button) -> begin
+        let selected = Menu.button_selected menu label in begin
+          let updated_button = render_button_option ctx menu 
+              ((x+x_offset), ((y+40)+(i+1)*30)) (20, 20) label selected in begin
+            (label, updated_button);
+          end
+        end
+      end ) buttons in begin
+    Sdl.render_present ctx.renderer;
+    Menu.update_buttons menu updated_buttons;
+  end
+end
+
+
 let render_menu (ctx:t) (menu:Menu.t) = begin
   set_color (178, 249, 255) ctx; 
   let (w,h) = Sdl.get_window_size ctx.window in
@@ -183,16 +201,16 @@ let render_menu (ctx:t) (menu:Menu.t) = begin
   let rect = Sdl.Rect.create x y menu_w menu_h in
   fill_rect rect ctx;
   render_title ctx "DUCKTRIS" x y;
-  let x_offset = x/2 in
-  let label1 = "Multiplayer" in
-  let selected = Menu.button_selected menu label1 in
-  let button1 = render_button_option ctx menu ((x+x_offset), ((3*y)/2)) 
+  render_buttons ctx menu (x,y);
+  (* let x_offset = x/2 in
+     let label1 = "Multiplayer" in
+     let selected = Menu.button_selected menu label1 in
+     let button1 = render_button_option ctx menu ((x+x_offset), ((3*y)/2)) 
       (20, 20) label1 selected in begin
-    Sdl.render_present ctx.renderer;
-  let label2 = "Volume" in
-  let 
-    Menu.update_buttons menu [(label1, button1)];
-  end
+     Sdl.render_present ctx.renderer;
+     let label2 = "Volume" in 
+     Menu.update_buttons menu [(label1, button1)];
+     end *)
 end
 
 module type GameRenderer = sig

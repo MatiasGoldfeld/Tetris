@@ -15,6 +15,7 @@ type v =
 
 module type S = sig
   type t
+  exception Gameover of t
   val make_test_state : int -> int -> int -> int-> int -> int -> int -> int ->
     event list -> Tetromino.t list -> Tetromino.t option -> bool -> Tetromino.t 
     -> int -> int * int -> int -> color option array array -> t
@@ -64,6 +65,8 @@ module Local : S = struct
        already placed on the playfield are represented here. *)
     playfield : color option array array
   }
+
+  exception Gameover of t
 
   let make_test_state scoret linest levelt fall_speedt step_deltat 
       ext_placement_move_countt ext_placement_deltat min_rowt eventst queuet 
@@ -161,20 +164,25 @@ module Local : S = struct
       else { state with ghost_row = row - 1 }
     in helper (start_row + 1)
 
+
   let drop_help state =
     let column = 5 - (Tetromino.size state.falling / 2) in
     if legal state state.falling state.falling_rot (column, 0)
-    then {state with falling_pos = (column, 0);
-                     ext_placement_move_count = 0;
-                     ext_placement_delta = 0;
-                     min_row = 0} |> update_ghost
+    then {state with 
+          step_delta = 0;
+          falling_pos = (column, 0);
+          ext_placement_move_count = 0;
+          ext_placement_delta = 0;
+          min_row = 0} |> update_ghost
     else begin
       if legal state state.falling state.falling_rot (column, -1)
-      then {state with falling_pos = (column, -1);
-                       ext_placement_move_count = 0; 
-                       ext_placement_delta = 0;
-                       min_row = -1} |> update_ghost
-      else failwith "gameover"
+      then {state with 
+            step_delta = 0;
+            falling_pos = (column, -1);
+            ext_placement_move_count = 0; 
+            ext_placement_delta = 0;
+            min_row = -1} |> update_ghost
+      else raise (Gameover state)
     end
 
   (** [drop piece state] is the [state] with a new piece initialized as the 
@@ -194,6 +202,7 @@ module Local : S = struct
     let fall_speed = 1000. *. (0.8 -. (level_f *. 0.007)) ** level_f in
     { state with fall_speed = Float.to_int fall_speed }
 
+
   let init (width:int) (height:int) (level:int) : t =
     let queue = shuffle Tetromino.defaults in
     {
@@ -206,7 +215,7 @@ module Local : S = struct
       ext_placement_delta = 0;
       min_row = -1;
       events = [];
-      queue = List.tl queue;
+      queue = queue;
       held = None;
       held_before = false;
       falling = List.hd queue;
@@ -400,7 +409,8 @@ module Local : S = struct
     match held state with
     | None ->
       let this_piece = state.falling in
-      drop {state with held = Some this_piece; held_before = true}
+      let new_state = drop {state with held = Some this_piece} in
+      {new_state with held_before = true}
     | Some piece ->
       if state.held_before 
       then state
@@ -409,7 +419,7 @@ module Local : S = struct
 
   let hard_drop (state:t) : t =
     place_piece 
-      {state with score = 2*(state.ghost_row - (snd state.falling_pos))} 
+      {state with score = (state.score + 2*(state.ghost_row - (snd state.falling_pos)))} 
       (fst state.falling_pos) state.ghost_row
 
   let handle_events (f:event -> unit) (state:t) : t =

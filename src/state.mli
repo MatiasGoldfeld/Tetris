@@ -19,6 +19,8 @@ module type S = sig
   type t
 
 
+  exception Gameover of t
+
   (** [make_test_state scoret linest levelt fall_speedt step_deltat 
       ext_placement_move_countt ext_placement_deltat min_rowt eventst queuet 
       heldt held_beforet fallingt falling_rott falling_post ghost_rowt 

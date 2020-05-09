@@ -26,6 +26,8 @@ let init labels = {
 
 let get_button menu label = List.assoc label menu.buttons
 
+let buttons menu = menu.buttons
+
 let make_button 
     (coords:int*int) (dimensions:int*int) =
   {
@@ -44,9 +46,6 @@ let update_buttons menu buttons =
     menu with buttons=buttons
   }
 
-
-let set_multiplayer_buttons (menu:t) (buttons:(string*button) list) =
-  {menu with buttons = buttons}
 
 let in_button button click_coords : bool = 
   let (button_x, button_y) = button.coords in
