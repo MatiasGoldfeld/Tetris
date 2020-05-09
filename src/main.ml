@@ -16,7 +16,7 @@ let main () =
       (Sdl.K.right,    Game.MRight);
       (Sdl.K.up,       Game.MUp);
       (Sdl.K.down,     Game.MDown);
-      (Sdl.K.kp_enter, Game.MEnter);
+      (Sdl.K.return,   Game.MEnter);
     ] in
     let game_controls = [
       (Sdl.K.escape, Game.GMenu);

@@ -57,7 +57,7 @@ module Make (S : State.S) = struct
     audio : Audio.t;
     graphics : Graphics.t;
     menu : Menu.t;
-
+    gmenu_pos : int;
   }
 
   let in_menu (game:t) : bool = game.state = GameMenu
@@ -67,31 +67,37 @@ module Make (S : State.S) = struct
   let menu_inputs_press
       (inputs:menu_inputs_t)
       (k, i:Sdl.keycode * menu_input) : unit =
-    let add = Hashtbl.add inputs in
+    let add = Hashtbl.add inputs k in
     match i with
-    | MMenu  -> add k ((fun x -> {x with state = Playing}), false)
+    | MMenu  -> add ((fun x -> {x with state = Playing}), false)
     | MLeft  -> ()
     | MRight -> ()
-    | MUp    -> ()
-    | MDown  -> ()
-    | MEnter -> ()
+    | MUp    ->
+      add ((fun x -> {x with gmenu_pos = max 0 (x.gmenu_pos - 1)}), true)
+    | MDown  ->
+      add ((fun x -> {x with gmenu_pos = min 1 (x.gmenu_pos + 1)}), true)
+    | MEnter -> add ((fun x -> match x.gmenu_pos with
+        | 0 -> {x with state = Playing}
+        | 1 -> {x with state = MainMenu}
+        | _ -> failwith "Invalid in-game menu position"
+      ), false)
 
   (** [game_inputs_press inputs (k, i)] maps key [k] to
       input [i] in [inputs]. *)
   let game_inputs_press
       (inputs:game_inputs_t)
       (k, i:Sdl.keycode * game_input) : unit =
-    let add = Hashtbl.add inputs.event_driven in
+    let add = Hashtbl.add inputs.event_driven k in
     let state_fun f game = {game with play_state = f game.play_state} in
     match i with
-    | GMenu  -> add k ((fun x -> {x with state = GameMenu}), false)
-    | GLeft  -> add k (state_fun (S.move `Left), true)
-    | GRight -> add k (state_fun (S.move `Right), true)
-    | GCW    -> add k (state_fun (S.rotate `CW), false)
-    | GCCW   -> add k (state_fun (S.rotate `CCW), false)
+    | GMenu  -> add ((fun x -> {x with state = GameMenu; gmenu_pos = 0}), false)
+    | GLeft  -> add (state_fun (S.move `Left), true)
+    | GRight -> add (state_fun (S.move `Right), true)
+    | GCW    -> add (state_fun (S.rotate `CW), false)
+    | GCCW   -> add (state_fun (S.rotate `CCW), false)
     | GSoft  -> inputs.soft_drop <- k
-    | GHard  -> add k (state_fun (S.hard_drop), false)
-    | GHold  -> add k (state_fun (S.hold), false)
+    | GHard  -> add (state_fun (S.hard_drop), false)
+    | GHold  -> add (state_fun (S.hold), false)
 
   let rec handle_events (inputs:inputs_t) (game:t) : t =
     let event = Sdl.Event.create () in
@@ -142,14 +148,17 @@ module Make (S : State.S) = struct
         | Gameover -> game
         | GameoverHighscore -> game
         | Playing | GameMenu ->
+          let soft_sc = Sdl.get_scancode_from_key game.game_inputs.soft_drop in
+          let soft_down = if game.state = GameMenu then false else
+              (Sdl.get_keyboard_state ()).{soft_sc} = 1 in
           let play_state =
-            let soft_sc = Sdl.get_scancode_from_key
-                game.game_inputs.soft_drop in
-            let soft = (Sdl.get_keyboard_state ()).{soft_sc} = 1 in
             if game.state = GameMenu && S.pauseable
             then game.play_state
-            else S.update game.play_state delta soft
-          in GR.render game.graphics [game.play_state];
+            else S.update game.play_state delta soft_down
+          in 
+          let menu = if game.state = Playing then [] else
+              [("Resume", game.gmenu_pos = 0); ("Quit", game.gmenu_pos = 1)] in
+          GR.render game.graphics [game.play_state] menu;
           { game with play_state = play_state; last_update = time }
     in loop game
 
@@ -175,5 +184,6 @@ module Make (S : State.S) = struct
       audio = audio;
       graphics = graphics;
       menu = menu;
+      gmenu_pos = 0;
     }
 end

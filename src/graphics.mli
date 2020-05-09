@@ -11,9 +11,9 @@ val render_menu : t -> Menu.t -> (string*Menu.button) list
 
 module type GameRenderer = sig
   module S : State.S
-  (** [render ctx states] provides a graphical representation of all [states]
-      using graphics context [ctx]. *)
-  val render : t -> S.t list -> unit
+  (** [render ctx states menu] provides a graphical representation of all
+      [states] and pause menu [menu] using graphics context [ctx]. *)
+  val render : t -> S.t list -> (string * bool) list -> unit
 end
 
 module MakeGameRenderer (S : State.S) :
