@@ -198,7 +198,6 @@ module Local : S = struct
     { state with fall_speed = Float.to_int fall_speed }
 
 
-
   let init (width:int) (height:int) (level:int) : t =
     let queue = shuffle Tetromino.defaults in
     {
@@ -405,7 +404,8 @@ module Local : S = struct
     match held state with
     | None ->
       let this_piece = state.falling in
-      drop {state with held = Some this_piece; held_before = true}
+      let new_state = drop {state with held = Some this_piece} in
+      {new_state with held_before = true}
     | Some piece ->
       if state.held_before 
       then state
