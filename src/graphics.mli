@@ -7,7 +7,7 @@ val init : bool -> string -> t
 
 (** [render_menu ctx menu] renders the menu and gives a representation of the
     buttons in the menu *)
-val render_menu : t -> Menu.t -> (string*Menu.button) list
+val render_menu : t -> Menu.t -> Menu.t
 
 (** [toggle_duck ctx] is [ctx] with the duck rendering option toggled. *)
 val toggle_duck : t -> t

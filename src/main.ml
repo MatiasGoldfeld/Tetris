@@ -8,7 +8,8 @@ let main () =
   | Ok () ->
     let audio = Audio.init "./resources/audio/" in
     let graphics = Graphics.init false "./resources/"  in
-    let menu = Menu.init () in
+    let menu = Menu.init 
+        [("Multiplayer", "checkbox"); ("Start", "checkbox")] in
     Audio.adjust_music audio 0.05;
     let menu_controls = [
       (Sdl.K.escape,   Game.MMenu);
