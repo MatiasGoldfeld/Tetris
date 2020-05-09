@@ -16,6 +16,10 @@ type t = {
   font : Ttf.font;
 }
 
+let toggle_duck (ctx:t) = {
+  ctx with duck_mode = not ctx.duck_mode
+}
+
 (** [unpack message result] is [value] if [result] is [Ok value]. Otherwise, it
     logs [message] along with the error, and exits the program. *)
 let unpack (message:string) (result:'a Sdl.result) : 'a =
@@ -28,7 +32,6 @@ let unpack (message:string) (result:'a Sdl.result) : 'a =
 let set_color (r, g, b:int * int * int) ?(a:int=255) (ctx:t): unit =
   Sdl.set_render_draw_color ctx.renderer r g b a |> ignore
 
-
 (**  [render_duck ctx rect image_path ] draws a duck (based on the image at 
      [image_path]) on this [rect] in graphics contect [ctx] *)
 let render_duck_image (ctx:t) (rect:Sdl.rect) (texture:Tsdl.Sdl.texture) =
@@ -39,12 +42,12 @@ let render_duck_image (ctx:t) (rect:Sdl.rect) (texture:Tsdl.Sdl.texture) =
 let fill_rect (rect:Sdl.rect) (ctx:t) : unit = 
   Sdl.render_fill_rect ctx.renderer (Some rect) |> ignore
 
-let render_square (rect:Sdl.rect) (ctx:t) (color:color) : unit =
+let render_square (rect:Sdl.rect) (ctx:t) ?(a:int=255) (color:color) : unit =
   if ctx.duck_mode then
     let texture = (List.assoc color ctx.duck_images)
     in render_duck_image ctx rect texture
   else begin
-    set_color color ctx;
+    set_color color ~a:a ctx;
     fill_rect rect ctx
   end
 
@@ -269,11 +272,9 @@ module MakeGameRenderer (S : State.S) = struct
         let rect = Sdl.Rect.create (x + col * size) (y + row * size) size size in
         match S.value state col row with
         | State.Static color ->
-          (*set_color color ctx;
-            fill_rect rect ctx*)
           render_square rect ctx color
         | State.Falling (color, a) ->
-          render_square rect ctx color
+          render_square rect ctx ~a:a color
         | State.Ghost (color, a) ->
           set_color color ~a:a ctx;
           fill_rect rect ctx

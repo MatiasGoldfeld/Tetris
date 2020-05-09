@@ -1,7 +1,9 @@
 type event = 
   | Rotate 
-  | Drop
   | Locking
+  | Movement
+  | LineClear
+  | EndGame
 
 type color = int * int * int
 
@@ -16,9 +18,6 @@ type v =
 module type S = sig
   type t
   exception Gameover of t
-  val make_test_state : int -> int -> int -> int-> int -> int -> int -> int ->
-    event list -> Tetromino.t list -> Tetromino.t option -> bool -> Tetromino.t 
-    -> int -> int * int -> int -> color option array array -> t
   val pauseable : bool
   val init : int -> int -> int -> t
   val score : t -> int
@@ -37,7 +36,7 @@ module type S = sig
   val handle_events : (event -> unit) -> t -> t
 end
 
-module Local : S = struct
+module Local = struct
   (* the [i]th element in score_multipliers corresponds to the points 
      rewarded for clearing i lines *)
   let score_multipliers = [|0;100; 300; 500; 800|]
@@ -67,30 +66,6 @@ module Local : S = struct
   }
 
   exception Gameover of t
-
-  let make_test_state scoret linest levelt fall_speedt step_deltat 
-      ext_placement_move_countt ext_placement_deltat min_rowt eventst queuet 
-      heldt held_beforet fallingt falling_rott falling_post ghost_rowt 
-      playfieldt = 
-    {
-      score = scoret;
-      lines = linest;
-      level = levelt;
-      fall_speed = fall_speedt;
-      step_delta = step_deltat;
-      ext_placement_move_count = ext_placement_move_countt;
-      ext_placement_delta = ext_placement_deltat;
-      min_row = min_rowt;
-      events = eventst;
-      queue = queuet;
-      held = heldt;
-      held_before = held_beforet;
-      falling = fallingt;
-      falling_rot = falling_rott;
-      falling_pos = falling_post;
-      ghost_row = ghost_rowt;
-      playfield = playfieldt
-    }
 
 
 
@@ -182,7 +157,7 @@ module Local : S = struct
             ext_placement_move_count = 0; 
             ext_placement_delta = 0;
             min_row = -1} |> update_ghost
-      else raise (Gameover state)
+      else raise (Gameover {state with events = EndGame::state.events})
     end
 
   (** [drop piece state] is the [state] with a new piece initialized as the 
@@ -246,20 +221,22 @@ module Local : S = struct
           fill_in_rows state (height - 1))
     else state.playfield.(height) <- Array.make (field_width state) None
 
-  let rec clear_lines_helper state height score_dif =
+  let rec clear_lines_helper state height line_dif =
     if height >= 0 then begin
       if (check_row state.playfield.(height))
       then
         (fill_in_rows state height;
          let new_state = recalculate_fall_speed
-             { state with lines = state.lines + 1;
-                          level = max state.level (1 + (state.lines + 1) / 10) }
-         in clear_lines_helper new_state height (score_dif+1))
-      else clear_lines_helper state (height - 1) (score_dif)
+             {state with lines = state.lines + 1;
+                         level = max state.level (1 + (state.lines + 1) / 10)}
+         in clear_lines_helper new_state height (line_dif+1))
+      else clear_lines_helper state (height - 1) (line_dif)
     end
     else
-      let new_score = state.score + state.level*score_multipliers.(score_dif) in
-      { state with score = new_score}
+      let new_score = state.score + state.level*score_multipliers.(line_dif) in
+      if line_dif > 0 
+      then {state with score = new_score; events = LineClear::state.events} 
+      else {state with score = new_score}
 
   let clear_lines state = 
     clear_lines_helper state (field_height state - 1) 0
@@ -276,7 +253,9 @@ module Local : S = struct
         if c >= fall_c && c - fall_c < Tetromino.size state.falling then
           let check = Tetromino.value tet fall_rot (c - fall_c) in
           match check (r - fall_r) with
-          | Some color -> Falling (color, 255)
+          | Some color ->
+            let a = (500 - state.ext_placement_delta) * 255 / 500 in
+            Falling (color, a)
           | None ->
             match check (r - state.ghost_row) with
             | Some color -> Ghost (color, 95)
@@ -317,7 +296,8 @@ module Local : S = struct
         else ()
       done
     done;
-    drop (clear_lines spin_score_state)
+    let new_state = {spin_score_state with events = Locking::state.events} in
+    drop (clear_lines new_state)
 
   let queue (state:t) : Tetromino.t list =
     state.queue
@@ -384,7 +364,8 @@ module Local : S = struct
           (x + fst state.falling_pos, y + snd state.falling_pos) in
         if legal state state.falling new_rot check_pos then
           let ext_state = ext_placement_add state in
-          { ext_state with falling_rot = new_rot; falling_pos = check_pos}
+          { ext_state with falling_rot = new_rot; falling_pos = check_pos;
+                           events = Rotate::state.events}
           |> update_ghost
         else test_rot t
     in test_rot (Tetromino.wall_kicks state.falling rot rotation)
@@ -396,7 +377,7 @@ module Local : S = struct
     in 
     if legal state state.falling state.falling_rot new_pos then 
       let ext_state = ext_placement_add state in
-      { ext_state with falling_pos = new_pos }
+      { ext_state with falling_pos = new_pos; events = Movement::state.events}
       |> update_ghost
     else state
 
@@ -425,4 +406,31 @@ module Local : S = struct
   let handle_events (f:event -> unit) (state:t) : t =
     List.iter f (List.rev state.events);
     { state with events = [] }
+
 end
+
+
+let make_test_state scoret linest levelt fall_speedt step_deltat 
+    ext_placement_move_countt ext_placement_deltat min_rowt eventst queuet 
+    heldt held_beforet fallingt falling_rott falling_post ghost_rowt 
+    playfieldt : Local.t = 
+  {
+    score = scoret;
+    lines = linest;
+    level = levelt;
+    fall_speed = fall_speedt;
+    step_delta = step_deltat;
+    ext_placement_move_count = ext_placement_move_countt;
+    ext_placement_delta = ext_placement_deltat;
+    min_row = min_rowt;
+    events = eventst;
+    queue = queuet;
+    held = heldt;
+    held_before = held_beforet;
+    falling = fallingt;
+    falling_rot = falling_rott;
+    falling_pos = falling_post;
+    ghost_row = ghost_rowt;
+    playfield = playfieldt
+  }
+

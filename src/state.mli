@@ -1,8 +1,10 @@
 (** The representation of an a event that can be handled. *)
 type event = 
   | Rotate 
-  | Drop
   | Locking
+  | Movement
+  | LineClear
+  | EndGame
 
 (** The representation of an RGB color. *)
 type color = int * int * int
@@ -20,14 +22,6 @@ module type S = sig
 
 
   exception Gameover of t
-
-  (** [make_test_state scoret linest levelt fall_speedt step_deltat 
-      ext_placement_move_countt ext_placement_deltat min_rowt eventst queuet 
-      heldt held_beforet fallingt falling_rott falling_post ghost_rowt 
-      playfieldt] is the state with all of the above named parameters. *)
-  val make_test_state : int -> int -> int -> int-> int -> int -> int -> int ->
-    event list -> Tetromino.t list -> Tetromino.t option -> bool -> Tetromino.t 
-    -> int -> int * int -> int -> color option array array -> t
 
   (** [pauseable] is whether this state is pauseable. *)
   val pauseable : bool
@@ -88,3 +82,12 @@ module type S = sig
 end
 
 module Local : S
+
+
+(** [make_test_state scoret linest levelt fall_speedt step_deltat 
+    ext_placement_move_countt ext_placement_deltat min_rowt eventst queuet 
+    heldt held_beforet fallingt falling_rott falling_post ghost_rowt 
+    playfieldt] is the state with all of the above named parameters. *)
+val make_test_state : int -> int -> int -> int-> int -> int -> int -> int ->
+  event list -> Tetromino.t list -> Tetromino.t option -> bool -> Tetromino.t 
+  -> int -> int * int -> int -> color option array array -> Local.t

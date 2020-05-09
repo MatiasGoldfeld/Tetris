@@ -58,6 +58,7 @@ module Make (S : State.S) = struct
     graphics : Graphics.t;
     menu : Menu.t;
     gmenu_pos : int;
+    konami : int;
   }
 
   let in_menu (game:t) : bool = game.state = GameMenu
@@ -99,6 +100,23 @@ module Make (S : State.S) = struct
     | GHard  -> add (state_fun (S.hard_drop), false)
     | GHold  -> add (state_fun (S.hold), false)
 
+  let konami_code (key:Sdl.keycode) (game:t) : t =
+    let code = [
+      Sdl.K.up; Sdl.K.up;
+      Sdl.K.down; Sdl.K.down;
+      Sdl.K.left; Sdl.K.right;
+      Sdl.K.left; Sdl.K.right;
+      Sdl.K.b; Sdl.K.a;
+    ] in
+    let next = if key = List.nth code (game.konami)
+      then game.konami + 1
+      else 0
+    in if next >= List.length code
+    then {game with konami = 0; graphics = Graphics.toggle_duck game.graphics}
+    else {game with konami = next}
+
+  (** [handle_events] handles all SDL events by using actions from [inputs] in
+      [game]. *)
   let rec handle_events (inputs:inputs_t) (game:t) : t =
     let event = Sdl.Event.create () in
     if not (Sdl.poll_event (Some event)) then game
@@ -106,6 +124,7 @@ module Make (S : State.S) = struct
         match Sdl.Event.(enum (get event typ)) with
         | `Key_down ->
           let key = Sdl.Event.(get event keyboard_keycode) in
+          let game = konami_code key game in
           let repeat = Sdl.Event.(get event keyboard_repeat) <> 0 in
           if Hashtbl.mem inputs key then
             let action, repeatable = Hashtbl.find inputs key in
@@ -184,5 +203,6 @@ module Make (S : State.S) = struct
       graphics = graphics;
       menu = menu;
       gmenu_pos = 0;
+      konami = 0;
     }
 end
