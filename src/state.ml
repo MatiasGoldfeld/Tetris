@@ -164,19 +164,24 @@ module Local : S = struct
       else { state with ghost_row = row - 1 }
     in helper (start_row + 1)
 
+
   let drop_help state =
     let column = 5 - (Tetromino.size state.falling / 2) in
     if legal state state.falling state.falling_rot (column, 0)
-    then {state with falling_pos = (column, 0);
-                     ext_placement_move_count = 0;
-                     ext_placement_delta = 0;
-                     min_row = 0} |> update_ghost
+    then {state with 
+          step_delta = 0;
+          falling_pos = (column, 0);
+          ext_placement_move_count = 0;
+          ext_placement_delta = 0;
+          min_row = 0} |> update_ghost
     else begin
       if legal state state.falling state.falling_rot (column, -1)
-      then {state with falling_pos = (column, -1);
-                       ext_placement_move_count = 0; 
-                       ext_placement_delta = 0;
-                       min_row = -1} |> update_ghost
+      then {state with 
+            step_delta = 0;
+            falling_pos = (column, -1);
+            ext_placement_move_count = 0; 
+            ext_placement_delta = 0;
+            min_row = -1} |> update_ghost
       else raise (Gameover state)
     end
 
@@ -414,7 +419,7 @@ module Local : S = struct
 
   let hard_drop (state:t) : t =
     place_piece 
-      {state with score = 2*(snd state.falling_pos - state.ghost_row)} 
+      {state with score = (state.score + 2*(state.ghost_row - (snd state.falling_pos)))} 
       (fst state.falling_pos) state.ghost_row
 
   let handle_events (f:event -> unit) (state:t) : t =

@@ -28,7 +28,7 @@ let rec make_test_array_help lst arr =
     let columns = snd h in
     for i = fst rows to snd rows do
       for j = fst columns to snd columns do
-        arr.(i).(j) <- Some (212, 175, 55)
+        arr.(i).(j) <- Some (0, 255, 255)
       done
     done;
     make_test_array_help t arr
@@ -238,6 +238,55 @@ let test_state_4_2 : TestS.t = TestS.make_test_state 0 0 1 500 60 0 0 18 [] []
 let test_state_4_3 : TestS.t = TestS.make_test_state 0 0 1 500 540 0 60 18 [] [] 
     None false tet_t 0 (4, 18) 18 (Array.make_matrix 20 10 None)
 
+let test_state_5 : TestS.t = TestS.make_test_state 0 0 1 500 480 0 480 18 [] 
+    [tet_j; tet_o; tet_i; tet_l; tet_s; tet_t; tet_z; tet_o; tet_i]  
+    None false tet_i 0 (4, 18) 18 (Array.make_matrix 20 10 None)
+
+let test_state_5_1 : TestS.t = TestS.make_test_state 0 0 1 500 0 0 0 0 []
+    [tet_o; tet_i; tet_l; tet_s; tet_t; tet_z; tet_o; tet_i] None false tet_j 
+    0 (4, 0) 17 (make_test_array [((19,19),(4,7))])
+
+let test_state_6 : TestS.t = TestS.make_test_state 0 0 1 500 480 0 480 16 []
+    [tet_j; tet_o; tet_i; tet_l; tet_s; tet_t; tet_z; tet_o; tet_i] None false 
+    tet_i 3 (8, 16) 16 (make_test_array [((19,19),(0,8))])
+
+let test_state_6_1 : TestS.t = TestS.make_test_state 100 1 1 1000 0 0 0 0 []
+    [tet_o; tet_i; tet_l; tet_s; tet_t; tet_z; tet_o; tet_i] None false 
+    tet_j 0 (4, 0) 18 (make_test_array [((17,19),(9,9))])
+
+let test_state_6_2 : TestS.t = TestS.make_test_state 0 0 1 500 480 0 480 16 []
+    [tet_j; tet_o; tet_i; tet_l; tet_s; tet_t; tet_z; tet_o; tet_i] None false 
+    tet_i 3 (8, 16) 16 (make_test_array [((18,19),(0,8))])
+
+let test_state_6_3 : TestS.t = TestS.make_test_state 300 2 1 1000 0 0 0 0 []
+    [tet_o; tet_i; tet_l; tet_s; tet_t; tet_z; tet_o; tet_i] None false 
+    tet_j 0 (4, 0) 18 (make_test_array [((18,19),(9,9))])
+
+let test_state_6_4 : TestS.t = TestS.make_test_state 0 0 1 500 480 0 480 16 []
+    [tet_j; tet_o; tet_i; tet_l; tet_s; tet_t; tet_z; tet_o; tet_i] None false 
+    tet_i 3 (8, 16) 16 (make_test_array [((17,19),(0,8))])
+
+let test_state_6_5 : TestS.t = TestS.make_test_state 500 3 1 1000 0 0 0 0 []
+    [tet_o; tet_i; tet_l; tet_s; tet_t; tet_z; tet_o; tet_i] None false 
+    tet_j 0 (4, 0) 18 (make_test_array [((19,19),(9,9))])
+
+let test_state_6_6 : TestS.t = TestS.make_test_state 0 0 1 500 480 0 480 16 []
+    [tet_j; tet_o; tet_i; tet_l; tet_s; tet_t; tet_z; tet_o; tet_i] None false 
+    tet_i 3 (8, 16) 16 (make_test_array [((16,19),(0,8))])
+
+let test_state_6_7 : TestS.t = TestS.make_test_state 800 4 1 1000 0 0 0 0 []
+    [tet_o; tet_i; tet_l; tet_s; tet_t; tet_z; tet_o; tet_i] None false 
+    tet_j 0 (4, 0) 18 (make_test_array [])
+
+let test_state_6_8 : TestS.t = TestS.make_test_state 0 9 1 500 480 0 480 16 []
+    [tet_j; tet_o; tet_i; tet_l; tet_s; tet_t; tet_z; tet_o; tet_i] None false 
+    tet_i 3 (8, 16) 16 (make_test_array [((19,19),(0,8))])
+
+let test_state_6_9 : TestS.t = TestS.make_test_state 200 10 2 793 0 0 0 0 []
+    [tet_o; tet_i; tet_l; tet_s; tet_t; tet_z; tet_o; tet_i] None false 
+    tet_j 0 (4, 0) 18 (make_test_array [((17,19),(9,9))])
+
+
 let update_tests = [
   make_update_test "Update test, delta change" test_state_1 60 false 
     test_state_1_1;
@@ -254,6 +303,12 @@ let update_tests = [
     test_state_4_2;
   make_update_test "Step on bottom collision" test_state_4_1 60 false 
     test_state_4_3;
+  make_update_test "Place piece" test_state_5 60 false test_state_5_1;
+  make_update_test "Clear one line" test_state_6 60 false test_state_6_1;
+  make_update_test "Clear two lines" test_state_6_2 60 false test_state_6_3;
+  make_update_test "Clear three lines" test_state_6_4 60 false test_state_6_5;
+  make_update_test "Tetris!" test_state_6_6 60 false test_state_6_7;
+  make_update_test "Level up" test_state_6_8 60 false test_state_6_9
 ]
 
 
@@ -265,29 +320,69 @@ let make_hold_test
       assert_equal expected_output (TestS.hold state))
 
 let test_state_1 : TestS.t = TestS.make_test_state 0 0 1 0 0 0 0 0 [] 
-    [tet_o; tet_j; tet_i; tet_l; tet_s; tet_t; tet_z; tet_o; tet_i]  
+    [tet_j; tet_o; tet_i; tet_l; tet_s; tet_t; tet_z; tet_o; tet_i]  
     None false tet_t 0 (4, 0) 18 (Array.make_matrix 20 10 None)
 
 let test_state_1_1 : TestS.t = TestS.make_test_state 0 0 1 0 0 0 0 0 [] 
-    [tet_j; tet_i; tet_l; tet_s; tet_t; tet_z; tet_o; tet_i] 
-    (Some tet_t) false tet_o 0 (4, 0) 18 (Array.make_matrix 20 10 None)
+    [tet_o; tet_i; tet_l; tet_s; tet_t; tet_z; tet_o; tet_i] 
+    (Some tet_t) true tet_j 0 (4, 0) 18 (Array.make_matrix 20 10 None)
+
+let test_state_1_2 : TestS.t = TestS.make_test_state 0 0 1 0 0 0 0 0 [] 
+    [tet_o; tet_i; tet_l; tet_s; tet_t; tet_z; tet_o; tet_i] 
+    (Some tet_t) false tet_j 0 (4, 0) 18 (Array.make_matrix 20 10 None)
+
+let test_state_1_3 : TestS.t = TestS.make_test_state 0 0 1 0 0 0 0 0 [] 
+    [tet_o; tet_i; tet_l; tet_s; tet_t; tet_z; tet_o; tet_i] 
+    (Some tet_j) true tet_t 0 (4, 0) 18 (Array.make_matrix 20 10 None)
 
 
 let hold_tests = [
-  make_hold_test "Hold piece when none held" test_state_1 test_state_1_1
-
-
-
-
+  make_hold_test "Hold piece when None held" test_state_1 test_state_1_1;
+  make_hold_test "Hold piece when just held None" test_state_1_1 test_state_1_1;
+  make_hold_test "Hold piece when Some held" test_state_1_2 test_state_1_3;
+  make_hold_test "Hold piece when just held Some" test_state_1_3 test_state_1_3
 ]
 
+
+let make_hard_drop_test
+    (name : string)
+    (state : TestS.t)
+    (expected_output : TestS.t) : test = 
+  name >:: (fun _ -> 
+      assert_equal expected_output (TestS.hard_drop state))
+
+
+let test_state_1 : TestS.t = TestS.make_test_state 0 0 1 500 0 0 0 0 [] 
+    [tet_j; tet_o; tet_i; tet_l; tet_s; tet_t; tet_z; tet_o; tet_i]  
+    None false tet_i 0 (4, 0) 18 (Array.make_matrix 20 10 None)
+
+let test_state_1_1 : TestS.t = TestS.make_test_state 36 0 1 500 0 0 0 0 []
+    [tet_o; tet_i; tet_l; tet_s; tet_t; tet_z; tet_o; tet_i] None false tet_j 
+    0 (4, 0) 17 (make_test_array [((19,19),(4,7))])
+
+let test_state_1_2 : TestS.t = TestS.make_test_state 0 0 1 500 0 0 0 0 [] 
+    [tet_j; tet_o; tet_i; tet_l; tet_s; tet_t; tet_z; tet_o; tet_i]  
+    None false tet_i 0 (4, 0) 18 (
+    make_test_array [((19,19),(0,3));((19,19),(8,9))])
+
+let test_state_1_3 : TestS.t = TestS.make_test_state 136 1 1 1000 0 0 0 0 []
+    [tet_o; tet_i; tet_l; tet_s; tet_t; tet_z; tet_o; tet_i] None false tet_j 
+    0 (4, 0) 18 (make_test_array [])
+
+
+
+let hard_drop_tests = [
+  make_hard_drop_test "Hard drop" test_state_1 test_state_1_1;
+  make_hard_drop_test "Hard drop line clear" test_state_1_2 test_state_1_3
+]
 
 
 let tests = 
   "test suite for Tetris" >::: List.flatten [
     movement_tests;
     update_tests;
-    (* hold_tests *)
+    hold_tests;
+    hard_drop_tests
   ]
 
 
