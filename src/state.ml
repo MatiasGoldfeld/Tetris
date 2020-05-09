@@ -94,7 +94,7 @@ module Local : S = struct
 
 
 
-  let pauseable = false
+  let pauseable = true
 
   let field_width (state:t) : int =
     Array.length state.playfield.(0)

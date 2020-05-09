@@ -213,9 +213,26 @@ let render_menu (ctx:t) (menu:Menu.t) = begin
      end *)
 end
 
+(** [menu_maker ctx items pos] renders a menu consisting of [items], where
+    the strings are the names and the booleans are if they're higlighted, at
+    coordinates [pos] with size [size] using [ctx]. *)
+let menu_maker (ctx:t) (items:(string * bool) list) ((x,y):int * int)
+    (size:int) : unit =
+  let width, height = size * 10, size * (2 + 2 * List.length items) in
+  let bg = Sdl.Color.create 127 127 127 255 in
+  let fg_off = Sdl.Color.create 15 15 15 255 in
+  let fg_on = Sdl.Color.create 200 15 15 255 in
+  set_color (127, 127, 127) ctx;
+  fill_coords (x - width / 2) (y - height / 2) width height ctx;
+  let draw_item n (text, on) =
+    let fg = if on then fg_on else fg_off in
+    let pos = x - width / 2 + size * 2, y - height / 2 + size * (1 + 2 * n) in
+    draw_text ctx size text fg bg pos
+  in List.iteri draw_item items
+
 module type GameRenderer = sig
   module S : State.S
-  val render : t -> S.t list -> unit
+  val render : t -> S.t list -> (string * bool) list -> unit
 end
 
 module MakeGameRenderer (S : State.S) = struct
@@ -320,7 +337,7 @@ module MakeGameRenderer (S : State.S) = struct
     draw_text ctx size t_lines fg bg (x + x_offset, y + y_offset + size * 4);
     draw_text ctx size t_level fg bg (x + x_offset, y + y_offset + size * 6)
 
-  let render (ctx:t) (states:S.t list) : unit =
+  let render (ctx:t) (states:S.t list) (menu:(string * bool) list) : unit =
     let state = List.hd states in
     let w_desire, h_desire = 24, 20 in
     let w_true, h_true = Sdl.get_window_size ctx.window in
@@ -337,6 +354,8 @@ module MakeGameRenderer (S : State.S) = struct
     let time_field = Sdl.get_ticks () in (* temp *)
     draw_queue ctx state size 5 (x_offset + field_width + 8 * size, y_offset);
     let time_queue = Sdl.get_ticks () in (* temp *)
+    if menu = [] then () else
+      menu_maker ctx menu (x_offset + size * 13, y_offset + size * 10) size;
     Sdl.render_present ctx.renderer;
     (* The start variable and the following are temp perf testing code *)
     (* Printf.printf "Render time: %li, %li, %li"
