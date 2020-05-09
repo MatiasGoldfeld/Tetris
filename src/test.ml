@@ -291,6 +291,16 @@ let make_update_test
   name >:: (fun _ -> 
       assert_equal expected_output (TestS.update state delta soft_drop))
 
+let make_gameover_test
+    (name : string)
+    (state : TestS.t)
+    (delta : int)
+    (soft_drop : bool)
+    (expected_output : TestS.t) : test = 
+  name >:: (fun _ -> 
+      assert_raises (State.Local.Gameover(expected_output)) 
+        (fun _ -> TestS.update state delta soft_drop))
+
 let test_state_1 : TestS.t =  State.make_test_state 0 0 1 500 0 0 0 0 [] [] None 
     false tet_t 0 (4, 0) 18 (Array.make_matrix 20 10 None)
 
@@ -393,6 +403,16 @@ let test_state_6_9 : TestS.t =  State.make_test_state 200 10 2 793 0 0 0 0
     [tet_o; tet_i; tet_l; tet_s; tet_t; tet_z; tet_o; tet_i] None 
     false tet_j 0 (4, 0) 18 (make_test_array [((17,19),(9,9))])
 
+let test_state_7 : TestS.t =  State.make_test_state 0 0 1 1000 960 0 480 0 [] 
+    [tet_j; tet_o; tet_i; tet_l; tet_s; tet_t; tet_z; tet_o; tet_i]  
+    None false tet_i 0 (5, 0) 0 (make_test_array [((2,19),(0,8))])
+
+let test_state_7_1 : TestS.t =  State.make_test_state 0 0 1 1000 1020 0 480 0 
+    [EndGame; Locking] [tet_o; tet_i; tet_l; tet_s; tet_t; tet_z; tet_o; tet_i]  
+    None false tet_j 0 (5, 0) 0 
+    (make_test_array [((2,19),(0,8)); ((1,1),(5,8))])
+
+
 
 let update_tests = [
   make_update_test "Update test, delta change" test_state_1 60 false 
@@ -415,7 +435,8 @@ let update_tests = [
   make_update_test "Clear two lines" test_state_6_2 60 false test_state_6_3;
   make_update_test "Clear three lines" test_state_6_4 60 false test_state_6_5;
   make_update_test "Tetris!" test_state_6_6 60 false test_state_6_7;
-  make_update_test "Level up" test_state_6_8 60 false test_state_6_9
+  make_update_test "Level up" test_state_6_8 60 false test_state_6_9;
+  make_gameover_test "Gameover" test_state_7 60 false test_state_7_1
 ]
 
 
@@ -483,7 +504,6 @@ let hard_drop_tests = [
   make_hard_drop_test "Hard drop" test_state_1 test_state_1_1;
   make_hard_drop_test "Hard drop line clear" test_state_1_2 test_state_1_3
 ]
-
 
 let tests = 
   "test suite for Tetris" >::: List.flatten [
