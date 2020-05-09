@@ -116,7 +116,7 @@ module Make (S : State.S) = struct
         | `Mouse_button_down ->
           if game.state <> MainMenu then game else
             let click_coords = (Sdl.Event.(get event mouse_button_x), 
-                                Sdl.Event.(get event mouse_button_x)) in 
+                                Sdl.Event.(get event mouse_button_y)) in 
             let menu = Menu.mouse_clicked game.menu click_coords in
             { game with menu = menu }
         | `Quit ->
@@ -142,7 +142,6 @@ module Make (S : State.S) = struct
       if delta < 1000 / 60 then game else
         match game.state with
         | MainMenu ->
-          print_endline "main menu";
           let menu = Graphics.render_menu game.graphics game.menu in
           {game with menu = menu}
         | Gameover -> game

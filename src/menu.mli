@@ -1,15 +1,27 @@
+(** A representation of the menu *)
 type t
 
 (** The representation of the buttons on the menu *)
 type button
 
-(** [init button_labels] initializes a menu with buttons that have labels
+(** The representation of the different types of input in the menu. *)
+type input_type = Button of string | Text of string
+
+(** [m_field] is the [(label, text)] representation of a multiplayer 
+    textfield*)
+type m_field
+
+(** [init button_labels ] initializes a menu with buttons that have labels
     [button_labels] *)
-val init : string list -> t
+val init : (string*string) list -> t
+
+(** [multiplayer_fields menu] is the text input fields associated
+    with multiplayer. *)
+val multiplayer_fields : t -> (string * m_field) list
 
 (** [ make_button coords size ] creates a button at coordinates [coords]
     and of size [size] *)
-val make_button : int*int -> int*int -> button
+val make_button : int*int -> int*int -> string -> button
 
 (** [ update_button coords size ] updates a button, giving it new coordinates
     [coords] and size [size] *)

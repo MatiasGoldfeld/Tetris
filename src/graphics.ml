@@ -165,23 +165,49 @@ let render_button (ctx:t) x y w h (border:int) selected = begin
   if selected then draw_text ctx 16 "X" bg fg (x,y);
 end
 
+let render_fields (ctx:t) (menu:Menu.t) fields coords dimensions = begin
+  set_color (255, 255, 255) ctx; 
+  let (x,y) = coords in
+  let (w,h) = dimensions in
+  List.iteri (fun i field -> 
+      let rect = Sdl.Rect.create x (y+30*i) w h in begin
+        Sdl.set_text_input_rect (Some rect);
+        fill_rect rect ctx;
+        Sdl.start_text_input();
+      end
+    ) fields;
+  30 * (List.length fields);
+end
+
 let render_button_option ctx menu (x, y) (w, h) (label:string) selected = begin
   render_button ctx x y w h 2 selected;
   let bg = Sdl.Color.create 100 100 100 0 in
   let fg = Sdl.Color.create 200 200 200 0 in
   draw_text ctx 18 label bg fg (x+(w*2),(y-9));
-  Menu.get_button menu label |> Menu.update_button (x,y) (w,h);
+  if label = "Multiplayer" && selected then begin
+    let fields = Menu.multiplayer_fields menu in
+    let height_dif = render_fields ctx menu fields (x,y+30) (200,h) in begin
+      (Menu.get_button menu label |> Menu.update_button (x,y) (w,h), 
+       60 + height_dif)
+    end
+  end
+  else begin
+    (Menu.get_button menu label |> Menu.update_button (x,y) (w,h), 30)
+  end
 end
 
 let render_buttons (ctx:t) (menu:Menu.t) (coords:int*int) : Menu.t = begin
   let (x,y) = coords in
   let x_offset = x/2 in
   let buttons = Menu.buttons menu in
+  let height = ref ((y+80)) in
   let updated_buttons = List.mapi (fun i (label, button) -> begin
-        let selected = Menu.button_selected menu label in begin
-          let updated_button = render_button_option ctx menu 
-              ((x+x_offset), ((y+40)+(i+1)*30)) (20, 20) label selected in begin
-            (label, updated_button);
+        let selected = Menu.button_selected menu label in
+        let updated_button_info = render_button_option ctx menu 
+            ((x+x_offset), !height) (20, 20) label selected in begin
+          let updated_button = fst updated_button_info in begin
+            height := !height + (snd updated_button_info);
+            (label, updated_button)
           end
         end
       end ) buttons in begin
@@ -202,15 +228,6 @@ let render_menu (ctx:t) (menu:Menu.t) = begin
   fill_rect rect ctx;
   render_title ctx "DUCKTRIS" x y;
   render_buttons ctx menu (x,y);
-  (* let x_offset = x/2 in
-     let label1 = "Multiplayer" in
-     let selected = Menu.button_selected menu label1 in
-     let button1 = render_button_option ctx menu ((x+x_offset), ((3*y)/2)) 
-      (20, 20) label1 selected in begin
-     Sdl.render_present ctx.renderer;
-     let label2 = "Volume" in 
-     Menu.update_buttons menu [(label1, button1)];
-     end *)
 end
 
 (** [menu_maker ctx items pos] renders a menu consisting of [items], where
