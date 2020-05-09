@@ -3,12 +3,50 @@ open Audio
 open State
 
 
-let test =
-  ()
-(* Sdl.init [`AUDIO];
-   let audio = init "./resources/" in
-   start_music audio;
-   Sdltimer.delay(1000); *)
+(* 
+Test plan: 
+
+In this testing suite, we approached testing much like how testing was 
+approached for A3. This test suite only tests the state.ml module because the
+state module is the core of the game, and any sort of graphics, audio, menu, or 
+game testing would be better suited for play testing as opposed to ounit tests. 
+The functions we tested in our ounit suite were update, move, rotate, hold, and 
+hard_drop. We didn't test any other function as they were incidentally tested
+by the other tests within our testing file, and the tetromino file was
+tested as a byproduct of our ounit suite. Not all specific tetrominos were 
+tested for every function. This is because the tetrominos coding allows one test
+to essentially cover the same function for all of the tetrominos. Along with
+this, we play tested extensively to catch any bugs related to tetromino pieces
+themselves, and found none. 
+
+Developing test cases for this project was done in a glass box style due to the
+implementation of state being somewhat complex. In Tetris, there are too many
+background parts of state that need to be kept track of. However, in order to 
+preserve the black box testing ideals, all state changes visible to players were
+designed as tests prior to coding, and the resulting hidden values were
+calculated based on which values state keeps track of. In order to ensure the
+integrity of these tests, we calculated the hidden values based on the 
+detailed specifications of our fucntions and NOT the code itself. By doing this,
+we were able to develop a set of comprehensive tests that account for both the 
+seen and hidden values, writing tests to fit expected outcomes, and not tests to
+fit specific code.
+
+This testing approach demonstrates the correctness of the system in three major
+ways. First of all, the state tests ensure that any specific game movement is 
+correct, and that any call of those functions in a game loop would execute 
+properly. Second, play testing allowed us to make sure that the game loop ran
+without error. Much like with A3, any sort of errors while playing revealed
+issues in the system that we could fix, and it also ensured that our audio and 
+visual modules were running as expected. When we were play testing, we made sure
+to play in normal, and unusual ways in order to expose errors across the board 
+with gameplay. It was also a lot easier to play test with the knowledge that the
+movements in game were correct. It ensured that we didn't have to test specific 
+game movements, and could focus on big picture bugs. Finally, we had others play 
+test the system and record errors so that we had a more developed set of play 
+tests, ensuring that we caught all errors prior to launch. In this way, our
+testing approached ensured that we had a correct system.
+*)
+
 
 module TestS = Local
 
