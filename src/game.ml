@@ -121,8 +121,8 @@ module Make (S : State.S) = struct
     let game =
       if delta >= 1000 / 60 then
         if game.in_menu then begin
-          let menu = let buttons = Graphics.render_menu game.graphics game.menu in
-            Menu.set_multiplayer_buttons game.menu buttons in
+          let menu =
+            Graphics.render_menu game.graphics game.menu in
           {game with menu = menu};
         end
         else

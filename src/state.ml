@@ -409,7 +409,7 @@ module Local : S = struct
 
   let hard_drop (state:t) : t =
     place_piece 
-      {state with score = 2*(snd state.falling_pos - state.ghost_row)} 
+      {state with score = 2*(state.ghost_row - (snd state.falling_pos))} 
       (fst state.falling_pos) state.ghost_row
 
   let handle_events (f:event -> unit) (state:t) : t =

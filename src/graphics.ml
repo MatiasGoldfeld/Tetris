@@ -153,21 +153,24 @@ let render_title (ctx:t) (title: string) (x:int) (y:int) = begin
   draw_text ctx size text fg bg (x+x_offset, y);
 end
 
-let render_button (ctx:t) x y w h (border:int) = begin
+let render_button (ctx:t) x y w h (border:int) selected = begin
   set_color (0, 0, 0) ctx; 
   let outline = Sdl.Rect.create (x-(border)/2) (y-(border)/2) (w+border) (h+border) in
   fill_rect outline ctx;
   set_color (255, 255, 255) ctx; 
+  let bg = Sdl.Color.create 100 100 100 0 in
+  let fg = Sdl.Color.create 200 200 200 0 in
   let rect = Sdl.Rect.create x y w h in
   fill_rect rect ctx;
+  if selected then draw_text ctx 16 "X" bg fg (x,y);
 end
 
-let render_button_option ctx (x, y) (w, h) (label:string) : (string * Menu.button) = begin
-  render_button ctx x y w h 2;
+let render_button_option ctx menu (x, y) (w, h) (label:string) selected = begin
+  render_button ctx x y w h 2 selected;
   let bg = Sdl.Color.create 100 100 100 0 in
   let fg = Sdl.Color.create 200 200 200 0 in
   draw_text ctx 18 label bg fg (x+(w*2),(y-9));
-  (label, Menu.make_button (x,y) (w,h));
+  Menu.get_button menu label |> Menu.update_button (x,y) (w,h);
 end
 
 let render_menu (ctx:t) (menu:Menu.t) = begin
@@ -181,10 +184,14 @@ let render_menu (ctx:t) (menu:Menu.t) = begin
   fill_rect rect ctx;
   render_title ctx "DUCKTRIS" x y;
   let x_offset = x/2 in
-  let button = render_button_option ctx ((x+x_offset), ((3*y)/2)) 
-      (10, 10) "Multiplayer" in begin
+  let label1 = "Multiplayer" in
+  let selected = Menu.button_selected menu label1 in
+  let button1 = render_button_option ctx menu ((x+x_offset), ((3*y)/2)) 
+      (20, 20) label1 selected in begin
     Sdl.render_present ctx.renderer;
-    [button];
+  let label2 = "Volume" in
+  let 
+    Menu.update_buttons menu [(label1, button1)];
   end
 end
 
