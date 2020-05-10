@@ -169,18 +169,15 @@ let render_button (ctx:t) x y w h (border:int) (border_color:color)
   if selected then draw_text ctx 16 "X" bg fg (x,y);
 end
 
-let render_fields (ctx:t) (menu:Menu.t) fields coords dimensions = begin
+let render_fields (ctx:t) (menu:Menu.t) field coords dimensions = begin
   set_color (255, 255, 255) ctx; 
   let (x,y) = coords in
   let (w,h) = dimensions in
-  List.iteri (fun i field -> 
-      let rect = Sdl.Rect.create x (y+30*i) w h in begin
-        Sdl.set_text_input_rect (Some rect);
-        fill_rect rect ctx;
-        Sdl.start_text_input();
-      end
-    ) fields;
-  30 * (List.length fields);
+  let rect = Sdl.Rect.create x y w h in begin
+    Sdl.set_text_input_rect (Some rect);
+    fill_rect rect ctx;
+    Sdl.start_text_input();
+  end
 end
 
 let render_action_button ctx menu (x, y) (w, h) (label:string) selected = begin
