@@ -59,7 +59,7 @@ module type S = sig
   (** [update state delta soft_drop] is the state of [state] after [delta]
       amount of time in milliseconds. [soft_drop] indicates if soft drop is
       active. *)
-  val update : t -> int -> bool -> t
+  val update : t -> int -> bool -> t Lwt.t
 
   (** [rotate rotation state] is [state] with an attempt to rotate the falling
       piece in [rotation]. *)

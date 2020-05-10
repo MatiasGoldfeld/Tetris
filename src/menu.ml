@@ -1,6 +1,6 @@
 open Tsdl
-
-type mode = SinglePlayer | MultiplayerHost | MultiplayerFriend
+open Lwt.Infix
+open Ppx_lwt
 
 type t = {
   menu : Menu_state.t;
@@ -57,19 +57,23 @@ let rec handle_events (menu : t) : t =
       | _ -> menu
     end
 
-(** [loop menu] is unit with byproduct of running the menu loop. *)
-let rec loop (menu : t) : unit =
+(** [loop menu] runs the main menu loop, handling input and rendering the
+    menu. *)
+let rec loop (menu : t) : unit Lwt.t =
+  let%lwt () = Lwt_main.yield () in
   let menu = handle_events menu in
   let time = Int32.to_int (Sdl.get_ticks ()) in
   let delta = (time - menu.last_update) in
-  let menu =
-    if Menu_state.should_start_game menu.menu then begin
-      if Menu_state.is_multiplayer menu.menu then
-        ()
-      else
-        LocalGame.init menu.audio menu.graphics 0 menu_controls game_controls;
-      { menu with menu = Menu_state.set_start_game menu.menu false }
-    end else menu in
+  let%lwt menu =
+    if Menu_state.should_start_game menu.menu then 
+      let%lwt () =
+        if Menu_state.is_multiplayer menu.menu then
+          Lwt.return ()
+        else
+          LocalGame.init menu.audio menu.graphics 0 menu_controls game_controls
+      in Lwt.return
+        { menu with menu = Menu_state.set_start_game menu.menu false }
+    else Lwt.return menu in
   let menu = if delta < 1000 / 60 then menu else
       { menu with menu = Graphics.render_menu menu.graphics menu.menu }
   in loop menu

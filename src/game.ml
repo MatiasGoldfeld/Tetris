@@ -1,4 +1,6 @@
 open Tsdl
+open Lwt.Infix
+open Ppx_lwt
 
 type menu_input = 
   | MMenu
@@ -27,7 +29,7 @@ type game_state =
 module type S = sig
   type t
   val init : Audio.t -> Graphics.t -> int -> (Sdl.keycode * menu_input) list ->
-    (Sdl.keycode * game_input) list -> unit
+    (Sdl.keycode * game_input) list -> unit Lwt.t
 end
 
 module Make (S : State.S) = struct
@@ -146,33 +148,30 @@ module Make (S : State.S) = struct
         | _ -> game
       end
 
-
-  (** [game_helper game delta time] is a game with all of the updated
+  (** [update game delta time] is a game with all of the updated
       parts from a cycle for the game. *)
-  let game_helper game delta time= 
+  let update game delta time : t Lwt.t = 
     match game.state with
-    | Gameover -> game
-    | GameoverHighscore -> game
+    | Gameover -> Lwt.return game
+    | GameoverHighscore -> Lwt.return game
     | Playing | GameMenu ->
       let soft_sc = Sdl.get_scancode_from_key game.game_inputs.soft_drop in
       let soft_down = if game.state = GameMenu then false else
           (Sdl.get_keyboard_state ()).{soft_sc} = 1 in
-      let play_state =
+      let%lwt play_state =
         if game.state = GameMenu && S.pauseable
-        then game.play_state
+        then Lwt.return game.play_state
         else S.update game.play_state delta soft_down
       in 
       let menu = if game.state = Playing then [] else
           [("Resume", game.gmenu_pos = 0); ("Quit", game.gmenu_pos = 1)] in
       GR.render game.graphics [game.play_state] menu;
-      { game with play_state = play_state; last_update = time }
-
-
-
+      Lwt.return { game with play_state = play_state; last_update = time }
 
   (** [loop game] is unit with the side effect of running a game loop for the
       game. *)
-  let rec loop (game:t) : unit =
+  let rec loop (game:t) : unit Lwt.t =
+    let%lwt () = Lwt_main.yield () in
     let inputs = match game.state with 
       | Playing -> game.game_inputs.event_driven
       | GameMenu -> game.menu_inputs
@@ -185,17 +184,16 @@ module Make (S : State.S) = struct
     let game = handle_events inputs game in
     let time = Int32.to_int (Sdl.get_ticks ()) in
     let delta = (time - game.last_update) in
-    let game =
-      if delta < 1000 / 60 then game else
-        game_helper game delta time
-    in if game.quit then Audio.stop_music game.audio else loop game
-
-
-
+    let%lwt game = if delta < 1000 / 60
+      then Lwt.return game
+      else update game delta time in
+    if game.quit
+    then (Audio.stop_music game.audio; Lwt.return ())
+    else loop game
 
   let init (audio : Audio.t) (graphics : Graphics.t) (level : int)
       (menu_controls : (Sdl.keycode * menu_input) list)
-      (game_controls : (Sdl.keycode * game_input) list) : unit =
+      (game_controls : (Sdl.keycode * game_input) list) : unit Lwt.t =
     Audio.loop_music audio;
     Random.self_init ();
     Audio.start_music audio;

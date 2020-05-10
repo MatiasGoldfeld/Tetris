@@ -1,3 +1,6 @@
+open Lwt.Infix
+open Ppx_lwt
+
 type event = 
   | Rotate 
   | Locking
@@ -28,7 +31,7 @@ module type S = sig
   val value : t -> int -> int -> v
   val queue : t -> Tetromino.t list
   val held : t -> Tetromino.t option
-  val update : t -> int -> bool -> t
+  val update : t -> int -> bool -> t Lwt.t
   val rotate : [`CCW | `CW] -> t -> t
   val move : [`Left | `Right] -> t -> t
   val hold : t -> t
@@ -282,7 +285,6 @@ module Local = struct
     else
       Empty
 
-
   let value (state:t) (c:int) (r:int) : v =
     if r < 0 || c < 0 || r >= field_height state || c >= field_width state
     then Empty
@@ -294,7 +296,6 @@ module Local = struct
         let fall_c, fall_r = state.falling_pos in
         let fall_rot = state.falling_rot in
         non_static_value state tet fall_rot c fall_c r fall_r
-
 
   (** [is_t_spin state pos_x pos_y ] checks if [state]'s falling tetromino 
       satisfies the t_spin conditions *)
@@ -353,7 +354,6 @@ module Local = struct
                  min_row = pos_y + 1
     }
 
-
   (** [step_aid state soft_drop new_ext_delta] is the state after deciding
       if in [state] a step is posisble. *)
   let step_aid state soft_drop new_ext_delta=
@@ -368,14 +368,13 @@ module Local = struct
       else {state with ext_placement_delta = new_ext_delta}
     end
 
-
-  let update (state:t) (delta:int) (soft_drop:bool) : t =
+  let update (state:t) (delta:int) (soft_drop:bool) : t Lwt.t =
     let new_delta = state.step_delta + delta * if soft_drop then 20 else 1 in
     let new_ext_delta = state.ext_placement_delta + delta in
     let state = {state with step_delta = new_delta} in
     if state.step_delta >= state.fall_speed 
-    then step_aid state soft_drop new_ext_delta
-    else state
+    then Lwt.return @@ step_aid state soft_drop new_ext_delta
+    else Lwt.return state
 
   (** [ext_placement_add state] is the state after updating the extended 
       placement record fields in [state] by one move. *)
@@ -456,9 +455,7 @@ module Local = struct
   let handle_events (f:event -> unit) (state:t) : t =
     List.iter f (List.rev state.events);
     { state with events = [] }
-
 end
-
 
 let make_test_state scoret linest levelt fall_speedt step_deltat 
     ext_placement_move_countt ext_placement_deltat min_rowt eventst queuet 
@@ -483,4 +480,3 @@ let make_test_state scoret linest levelt fall_speedt step_deltat
     ghost_row = ghost_rowt;
     playfield = playfieldt
   }
-

@@ -18,9 +18,6 @@ module Client = struct
 
   exception Gameover of t
 
-  let make_test_state _ _ _ _ _ _ _ _ _ _ _ _ =
-    failwith "Cannot make client test state"
-
   let pauseable = false
 
   let init _ _ _ =
@@ -153,16 +150,19 @@ module Server = struct
     | Done ->
       failwith "Cannot start already started server"
 
-  let make_test_state _ _ _ _ _ _ _ _ _ _ _ _ =
-    failwith "Cannot make client test state"
-
   let pauseable = false
 
   let init _ _ _ =
     failwith "Cannot init client state"
 
-  let update (server : t) (delta : int) (soft_drop : bool) : t =
-    failwith "unimplemented"
+  let update (server : t) (delta : int) (soft_drop : bool) : t Lwt.t =
+    let%lwt () = Lwt_main.yield () in
+    let update_fun state = S.update state delta false in
+    let all_states = server.server_state :: List.map snd server.client_states in
+    let server = match List.map update_fun all_states with
+      | server_state :: client_states -> server (* TODO *)
+      | _ -> failwith "Unexpected number of states in server update"
+    in failwith "unimplemented"
 
   let wrap (f : S.t -> S.t) (server : t) : t =
     { server with server_state = f server.server_state }
