@@ -7,5 +7,5 @@ type mode = SinglePlayer | MultiplayerHost | MultiplayerFriend
     have labels [button_labels] and displays it using [graphics] with audio
     coming from [audio]. *)
 val init : Audio.t -> Graphics.t -> 
-  (string * string * (Menu_state.t->Menu_state.t)) list -> mode
+  (string * string * (Menu_state.t->Menu_state.t)) list -> unit
 

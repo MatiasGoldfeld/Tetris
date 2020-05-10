@@ -8,7 +8,7 @@ type m_field = {
 }
 
 type t = {
-  should_quit_menu: bool;
+  start_game: bool;
   multiplayer: bool;
   buttons: (string*button) list;
   multiplayer_fields: (string*m_field) list;
@@ -69,9 +69,9 @@ let update_buttons menu buttons =
     menu with buttons=buttons
   }
 
-let start_game menu = {menu with should_quit_menu = true}
+let set_start_game menu value = {menu with start_game = value}
 
-let should_quit_menu menu = menu.should_quit_menu 
+let should_start_game menu = menu.start_game 
 
 let in_button button click_coords : bool = 
   let (button_x, button_y) = button.coords in
@@ -98,8 +98,8 @@ let mouse_clicked menu click_coords =
 let init labels = 
   let mp_fields = [init_empty_text "Host"; init_empty_text "Address"] in
   {
-    should_quit_menu= false;
-    multiplayer= false;
+    start_game = false;
+    multiplayer = false;
     buttons = List.map 
         (fun (label, b_type, on_click) -> 
            (label, make_button (0,0) (0,0) b_type on_click))
