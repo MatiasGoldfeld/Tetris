@@ -26,8 +26,8 @@ type game_state =
 
 module type S = sig
   type t
-  val init : int -> (Sdl.keycode * menu_input) list ->
-    (Sdl.keycode * game_input) list -> Audio.t -> Graphics.t -> Menu.t -> unit
+  val init : Audio.t -> Graphics.t -> int -> (Sdl.keycode * menu_input) list ->
+    (Sdl.keycode * game_input) list -> unit
 end
 
 module Make (S : State.S) = struct
@@ -159,10 +159,9 @@ module Make (S : State.S) = struct
           { game with play_state = play_state; last_update = time }
     in loop game
 
-  let init (level:int)
-      (menu_controls:(Sdl.keycode * menu_input) list)
-      (game_controls:(Sdl.keycode * game_input) list)
-      (audio:Audio.t) (graphics:Graphics.t) (menu:Menu.t)=
+  let init (audio : Audio.t) (graphics : Graphics.t) (level : int)
+      (menu_controls : (Sdl.keycode * menu_input) list)
+      (game_controls : (Sdl.keycode * game_input) list) : unit =
     Random.self_init ();
     Audio.start_music audio;
     let menu_inputs = Hashtbl.create 6 in
