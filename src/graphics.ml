@@ -5,12 +5,11 @@ open Tsdl_image
 type color = int * int * int
 type duck_image = (color * Tsdl.Sdl.texture)
 
-
 type t = {
   window : Sdl.window;
   renderer : Sdl.renderer;
   pixel_format : Sdl.pixel_format;
-  duck_mode: bool;
+  duck_mode : bool;
   duck_images : duck_image list;
   bg_color : color;
   font : Ttf.font;
@@ -162,14 +161,13 @@ let render_button (ctx:t) x y w h (border:int) (border_color:color)
   let outline = Sdl.Rect.create (x-(border)/2) (y-(border)/2) (w+border) (h+border) in
   fill_rect outline ctx;
   set_color button_color ctx; 
-  let bg = Sdl.Color.create 100 100 100 0 in
-  let fg = Sdl.Color.create 200 200 200 0 in
   let rect = Sdl.Rect.create x y w h in
   fill_rect rect ctx;
-  if selected then draw_text ctx 16 "X" bg fg (x,y);
 end
 
-let render_fields (ctx:t) (menu:Menu.t) field coords dimensions = begin
+module M = Menu_state
+
+let render_fields (ctx:t) (menu:M.t) fields coords dimensions = begin
   set_color (255, 255, 255) ctx; 
   let (x,y) = coords in
   let (w,h) = dimensions in
@@ -196,24 +194,25 @@ let render_checkbox_button ctx menu (x, y) (w, h) (label:string) selected = begi
   let bg = Sdl.Color.create 100 100 100 255 in
   let fg = Sdl.Color.create 200 200 200 255 in
   draw_text ctx 18 label bg fg (x+(w*2),(y-9));
-  if label = "Multiplayer" && selected then begin
-    let fields = Menu.multiplayer_fields menu in
+  if label = "Multiplayer" && Menu_state.is_multiplayer menu then begin
+    draw_text ctx 16 "X" bg fg (x,y);
+    let fields = M.multiplayer_fields menu in
     render_fields ctx menu fields (x,y+30) (200,h);
-    (Menu.get_button menu label |> Menu.update_button (x,y) (w,h), 60)
+    (M.get_button menu label |> M.update_button (x,y) (w,h), 80)
   end
   else begin
-    (Menu.get_button menu label |> Menu.update_button (x,y) (w,h), 30)
+    (M.get_button menu label |> M.update_button (x,y) (w,h), 30)
   end
 end
 
-let render_buttons (ctx:t) (menu:Menu.t) (coords:int*int) : Menu.t =
+let render_buttons (ctx:t) (menu:M.t) (coords:int*int) : M.t =
   let (x, y) = coords in
   let x_offset = x / 2 in
-  let buttons = Menu.buttons menu in
+  let buttons = M.buttons menu in
   let height = ref (y + 80) in
   let menu_r = ref menu in 
   let updated_buttons = List.mapi (fun i (label, button) -> begin
-        let selected = Menu.button_selected !menu_r label in
+        let selected = M.button_selected !menu_r label in
         let updated_button_info = render_checkbox_button ctx !menu_r 
             ((x+x_offset), !height) (20, 20) label selected in begin
           let updated_button = fst updated_button_info in begin
@@ -223,12 +222,11 @@ let render_buttons (ctx:t) (menu:Menu.t) (coords:int*int) : Menu.t =
         end
       end ) buttons in begin
     Sdl.render_present ctx.renderer;
-    menu_r := Menu.update_buttons !menu_r updated_buttons;
+    menu_r := M.update_buttons !menu_r updated_buttons;
   end;
   !menu_r
 
-
-let render_menu (ctx:t) (menu:Menu.t) : Menu.t = begin
+let render_menu (ctx:t) (menu:M.t) : M.t = begin
   set_color (178, 249, 255) ctx; 
   let (w,h) = Sdl.get_window_size ctx.window in
   let menu_w = w/2 in
@@ -373,18 +371,10 @@ module MakeGameRenderer (S : State.S) = struct
     let field_width = S.field_width state * size in
     set_color ctx.bg_color ctx;
     Sdl.render_clear ctx.renderer |> unpack "Failed to clear renderer";
-    let start = Sdl.get_ticks () in (* temp *)
     draw_game_info ctx state size (x_offset, y_offset);
-    let time_game = Sdl.get_ticks () in (* temp *)
     draw_playfield ctx state (x_offset + 8 * size, y_offset) size;
-    let time_field = Sdl.get_ticks () in (* temp *)
     draw_queue ctx state size 5 (x_offset + field_width + 8 * size, y_offset);
-    let time_queue = Sdl.get_ticks () in (* temp *)
     if menu = [] then () else
       menu_maker ctx menu (x_offset + size * 13, y_offset + size * 10) size;
     Sdl.render_present ctx.renderer;
-    (* The start variable and the following are temp perf testing code *)
-    (* Printf.printf "Render time: %li, %li, %li"
-       (Int32.sub time_game start) (Int32.sub time_field time_game) (Int32.sub time_queue time_field);
-       print_newline () *)
 end
