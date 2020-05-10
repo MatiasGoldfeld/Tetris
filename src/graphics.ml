@@ -166,7 +166,8 @@ end
 (** [render_button ctx x y w h border selected] is unit with byproduct of 
     rendering a button with [ctx] according to the parameters [x], [y], [w], and 
     [h], with border [border] and state [selected]. *)
-let render_button (ctx:t) x y w h (border:int) selected = begin
+let render_button (ctx:t) x y w h (border:int) button_color border_color
+    selected = begin
   set_color (0, 0, 0) ctx; 
   let outline = Sdl.Rect.create (x-(border)/2) (y-(border)/2) (w+border) (h+border) in
   fill_rect outline ctx;
@@ -200,7 +201,7 @@ end
 let render_checkbox_button ctx menu (x, y) (w, h) (label:string) selected = begin
   let border_color = (0,0,0) in
   let button_color = (255,255,255) in
-  render_button ctx x y w h 2 border_color button_color selected ;
+  render_button ctx x y w h 2 border_color button_color selected;
   let bg = Sdl.Color.create 100 100 100 255 in
   let fg = Sdl.Color.create 200 200 200 255 in
   draw_text ctx 18 label bg fg (x+(w*2),(y-9));
