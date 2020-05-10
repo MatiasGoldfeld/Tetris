@@ -17,6 +17,8 @@ module Client = struct
   type t = {
     local : S.t ref;
     remote : S.t list ref;
+    receiver : unit Lwt.t;
+    out_channel : Lwt_io.output Lwt_io.channel;
   }
 
   exception Gameover of t
@@ -24,12 +26,39 @@ module Client = struct
   (** [new_state ()] is a new game state. *)
   let new_state () = S.init 10 20 1
 
+  (** [create_sock ())] is the client sock. *)
+  let create_sock () : Lwt_unix.file_descr =
+    let open Lwt_unix in socket PF_INET SOCK_STREAM 0
+
+  (** [create_receiver local remote ic] spawns a thread that checks for input
+      from [ic], and writes that to [local] and [remote]. *)
+  let create_receiver
+      (local : S.t ref) (remote : S.t list ref)
+      (ic : Lwt_io.input Lwt_io.channel) : unit Lwt.t =
+    let rec receive () =
+      let%lwt packet = Lwt_io.read_value ic in
+      match packet with
+      | Packet (l, r) ->
+        local := l;
+        remote := r;
+        receive ()
+      | Quit -> Lwt.return ()
+    in receive ()
+
+  (** [create_client] is a client named [name] which attempts to connect to
+      server [server]. *)
   let create_client (name : string) (server : Lwt_unix.sockaddr) : t =
+    let sock = create_sock () in
+    Lwt.async (fun _ -> Lwt_unix.connect sock server);
+    let ic = Lwt_io.of_fd Lwt_io.Input sock in
+    let oc = Lwt_io.of_fd Lwt_io.Output sock in
     let local = ref (new_state ()) in
     let remote = ref [] in
     {
       local = local;
       remote = remote;
+      receiver = create_receiver local remote ic;
+      out_channel = oc;
     }
 
   let pauseable = false
@@ -37,8 +66,9 @@ module Client = struct
   let init _ _ _ =
     failwith "Cannot init client state"
 
-  let update (server : t) (delta : int) (soft_drop : bool) : t Lwt.t =
-    failwith "unimplemented"
+  let update (client : t) (delta : int) (soft_drop : bool) : t Lwt.t =
+    let%lwt () = Lwt_main.yield () in
+    Lwt.return client
 
   (** [return f client] is [client]'s local state applied to [f]. *)
   let return (f : S.t -> 'a) (client : t) : 'a = f !(client.local)
