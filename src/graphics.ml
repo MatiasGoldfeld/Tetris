@@ -166,7 +166,7 @@ end
 (** [render_button ctx x y w h border selected] is unit with byproduct of 
     rendering a button with [ctx] according to the parameters [x], [y], [w], and 
     [h], with border [border] and state [selected]. *)
-let render_button (ctx:t) x y w h (border:int) button_color border_color
+let render_button (ctx:t) x y w h (border:int) border_color button_color 
     selected = begin
   set_color (0, 0, 0) ctx; 
   let outline = Sdl.Rect.create (x-(border)/2) (y-(border)/2) (w+border) (h+border) in
@@ -195,7 +195,8 @@ let render_action_button ctx menu (x, y) (w, h) (label:string) selected = begin
   render_button ctx x y w h 2 border_color button_color selected;
   let bg = Sdl.Color.create 100 100 100 255 in
   let fg = Sdl.Color.create 200 200 200 255 in
-  draw_text ctx 18 label bg fg (x+w,(y-9));
+  draw_text ctx 18 label bg fg (x,(y));
+  (M.get_button menu label |> M.update_button (x,y) (w,h), 30)
 end
 
 let render_checkbox_button ctx menu (x, y) (w, h) (label:string) selected = begin
@@ -216,22 +217,33 @@ let render_checkbox_button ctx menu (x, y) (w, h) (label:string) selected = begi
   end
 end
 
+let rendered_button ctx button height (x,y) menu_r label= 
+  let updated_button_info = begin
+    match Menu_state.b_type button with 
+    | "checkbox" -> 
+      let selected = M.button_selected !menu_r label in
+      render_checkbox_button ctx !menu_r 
+        (x, !height) (20, 20) label selected
+    | "action" ->
+      let selected = M.button_selected !menu_r label in
+      render_action_button ctx !menu_r 
+        (x, !height) (100, 40) label selected
+    | _ -> failwith "Invalid button string type"
+  end in
+  let updated_button = fst updated_button_info in 
+  ((label, updated_button), snd updated_button_info)
+
+
 let render_buttons (ctx:t) (menu:M.t) (coords:int*int) : M.t =
   let (x, y) = coords in
   let x_offset = x / 2 in
   let buttons = M.buttons menu in
   let height = ref (y + 80) in
   let menu_r = ref menu in 
-  let updated_buttons = List.mapi (fun i (label, button) -> begin
-        let selected = M.button_selected !menu_r label in
-        let updated_button_info = render_checkbox_button ctx !menu_r 
-            ((x+x_offset), !height) (20, 20) label selected in begin
-          let updated_button = fst updated_button_info in begin
-            height := !height + (snd updated_button_info);
-            (label, updated_button)
-          end
-        end
-      end ) buttons in begin
+  let updated_buttons = List.mapi (fun i (label, button) -> 
+      let (b, h) = rendered_button ctx button height (x+x_offset,y) menu_r label
+      in height := !height + h; b
+    ) buttons in begin
     Sdl.render_present ctx.renderer;
     menu_r := M.update_buttons !menu_r updated_buttons;
   end;

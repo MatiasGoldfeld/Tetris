@@ -8,6 +8,7 @@ type m_field = {
 }
 
 type t = {
+  should_quit_menu: bool;
   multiplayer: bool;
   buttons: (string*button) list;
   multiplayer_fields: (string*m_field) list;
@@ -40,6 +41,11 @@ let get_button menu label = List.assoc label menu.buttons
 
 let buttons menu = menu.buttons
 
+let b_type button = 
+  match button.button_type with 
+  | Button str -> str 
+  | _ -> failwith "Invalid button"
+
 let toggle_multiplayer menu = {menu with multiplayer = not menu.multiplayer}
 
 let make_button (coords:int*int) (dimensions:int*int) b_type on_click =
@@ -62,6 +68,10 @@ let update_buttons menu buttons =
   {
     menu with buttons=buttons
   }
+
+let start_game menu = {menu with should_quit_menu = true}
+
+let should_quit_menu menu = menu.should_quit_menu 
 
 let in_button button click_coords : bool = 
   let (button_x, button_y) = button.coords in
@@ -88,6 +98,7 @@ let mouse_clicked menu click_coords =
 let init labels = 
   let mp_fields = [init_empty_text "Host"; init_empty_text "Address"] in
   {
+    should_quit_menu= false;
     multiplayer= false;
     buttons = List.map 
         (fun (label, b_type, on_click) -> 
