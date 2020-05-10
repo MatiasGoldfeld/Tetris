@@ -11,12 +11,12 @@ let main () =
     let menu = Menu.init () in
     Audio.adjust_music audio 0.05;
     let menu_controls = [
-      (Sdl.K.escape,   Game.MMenu);
-      (Sdl.K.left,     Game.MLeft);
-      (Sdl.K.right,    Game.MRight);
-      (Sdl.K.up,       Game.MUp);
-      (Sdl.K.down,     Game.MDown);
-      (Sdl.K.return,   Game.MEnter);
+      (Sdl.K.escape, Game.MMenu);
+      (Sdl.K.left,   Game.MLeft);
+      (Sdl.K.right,  Game.MRight);
+      (Sdl.K.up,     Game.MUp);
+      (Sdl.K.down,   Game.MDown);
+      (Sdl.K.return, Game.MEnter);
     ] in
     let game_controls = [
       (Sdl.K.escape, Game.GMenu);
@@ -33,4 +33,4 @@ let main () =
     Sdl.quit ();
     exit 0
 
-let () = main ()
+let () = Lwt_main.run @@ Lwt.return @@ main ()

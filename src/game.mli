@@ -27,9 +27,6 @@ module type S = sig
       [menu_controls] and [game_controls]. *)
   val init : int -> (Sdl.keycode * menu_input) list ->
     (Sdl.keycode * game_input) list -> Audio.t -> Graphics.t -> Menu.t -> unit
-
-  (** [in_menu game] is true if the player of [game] is in the menu. *)
-  val in_menu : t -> bool
 end
 
 module Make (S : State.S) : S

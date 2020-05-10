@@ -35,7 +35,6 @@ module type S = sig
   type t
   val init : int -> (Sdl.keycode * menu_input) list ->
     (Sdl.keycode * game_input) list -> Audio.t -> Graphics.t -> Menu.t -> unit
-  val in_menu : t -> bool
 end
 
 module Make (S : State.S) = struct
@@ -60,8 +59,6 @@ module Make (S : State.S) = struct
     gmenu_pos : int;
     konami : int;
   }
-
-  let in_menu (game:t) : bool = game.state = GameMenu
 
   (** [menu_inputs_press inputs (k, i)] maps key [k] to
       input [i] in [inputs]. *)

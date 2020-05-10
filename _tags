@@ -1,1 +1,1 @@
-true: package(tsdl), package(tsdl_mixer), package(tsdl_ttf), package(tsdl_image), package(oUnit)
+true: package(tsdl), package(tsdl_mixer), package(tsdl_ttf), package(tsdl_image), package(oUnit), package(lwt), package(lwt.unix), package(lwt_ppx)

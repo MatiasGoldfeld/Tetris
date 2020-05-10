@@ -1,5 +1,5 @@
-MODULES=audio game graphics main menu state test tetromino
-PKGS=tsdl,tsdl_mixer,tsdl_ttf,tsdl_image
+MODULES=audio game graphics main menu state test tetromino remote
+PKGS=tsdl, tsdl_mixer, tsdl_ttf, tsdl_image, lwt, lwt.unix, lwt_ppx
 SRC=src/
 PATHS=$(addprefix $(SRC), $(MODULES))
 OBJECTS=$(PATHS:=.cmo)

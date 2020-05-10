@@ -18,7 +18,6 @@ module type S = sig
   (** The representation of a Tetris gamestate. *)
   type t
 
-
   exception Gameover of t
 
   (** [make_test_state scoret linest levelt fall_speedt step_deltat 
