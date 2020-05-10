@@ -7,7 +7,8 @@ val init : string -> t
 (** [loop_music audio ] restarts music if it's been paused *)
 val loop_music: t -> unit
 
-(** [play_sound audio e] plays the sound triggered by [e] using [audio]. *)
+(** [play_sound audio event] plays the sound triggered by [event] using [audio].
+*)
 val play_sound : t -> State.event -> unit
 
 (** [adjust_music audio volume] sets the music volume to [volume].

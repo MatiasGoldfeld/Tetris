@@ -90,8 +90,8 @@ let button_selected menu label =
 
 let mouse_clicked menu click_coords =
   List.fold_left (fun  menu (label, button) ->
-      if in_button button click_coords then
-        button.on_click menu
+      if in_button button click_coords 
+      then button.on_click menu
       else menu
     ) menu menu.buttons
 
@@ -102,8 +102,7 @@ let init labels =
     multiplayer= false;
     buttons = List.map 
         (fun (label, b_type, on_click) -> 
-           (label, make_button (0,0) (0,0) b_type on_click)
-        )
+           (label, make_button (0,0) (0,0) b_type on_click))
         labels;
     multiplayer_fields = mp_fields;
     volume = 0.05;

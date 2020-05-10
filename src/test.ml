@@ -135,8 +135,8 @@ let test_state_3_1_1 : TestS.t = State.make_test_state 0 0 1 0 0 0 0 0 [Rotate]
 let test_state_3_2 : TestS.t = State.make_test_state 0 0 1 0 0 0 0 0 [] [] None 
     false tet_t 3 (4, 20) 37 (Array.make_matrix 40 10 None)
 
-let test_state_3_2_1 : TestS.t = State.make_test_state 0 0 1 0 0 0 0 0 [Rotate] []
-    None false tet_t 3 (4, 20) 37 (Array.make_matrix 40 10 None)
+let test_state_3_2_1 : TestS.t = State.make_test_state 0 0 1 0 0 0 0 0 [Rotate] 
+    [] None false tet_t 3 (4, 20) 37 (Array.make_matrix 40 10 None)
 
 let test_state_4 : TestS.t = State.make_test_state 0 0 1 0 0 0 0 0 [] [] None 
     false tet_t 0 (0, 20) 38 (Array.make_matrix 40 10 None)
@@ -194,8 +194,8 @@ let test_state_10_1_1 : TestS.t =  State.make_test_state 0 0 1 0 0 1 0 0
     [Movement; Movement] [] None false tet_t 0 (4, 36) 38 
     (Array.make_matrix 40 10 None)
 
-let test_state_10_2 : TestS.t =  State.make_test_state 0 0 1 0 0 1 0 0 [] [] None 
-    false tet_t 1 (4, 36) 37 (Array.make_matrix 40 10 None)
+let test_state_10_2 : TestS.t =  State.make_test_state 0 0 1 0 0 1 0 0 [] [] 
+    None false tet_t 1 (4, 36) 37 (Array.make_matrix 40 10 None)
 
 let test_state_10_2_1 : TestS.t =  State.make_test_state 0 0 1 0 0 1 0 0 
     [Rotate] [] None false tet_t 1 (4, 36) 37 (Array.make_matrix 40 10 None)
@@ -280,8 +280,8 @@ let make_gameover_test
       assert_raises (State.Local.Gameover(expected_output)) 
         (fun _ -> TestS.update state delta soft_drop))
 
-let test_state_1 : TestS.t =  State.make_test_state 0 0 1 500 0 0 0 20 [] [] None 
-    false tet_t 0 (4, 20) 38 (Array.make_matrix 40 10 None)
+let test_state_1 : TestS.t =  State.make_test_state 0 0 1 500 0 0 0 20 [] [] 
+    None false tet_t 0 (4, 20) 38 (Array.make_matrix 40 10 None)
 
 let test_state_1_1 : TestS.t =  State.make_test_state 0 0 1 500 60 0 0 20 [] [] 
     None false tet_t 0 (4, 20) 38 
