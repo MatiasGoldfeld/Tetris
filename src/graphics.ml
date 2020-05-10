@@ -198,39 +198,37 @@ let render_checkbox_button ctx menu (x, y) (w, h) (label:string) selected = begi
   draw_text ctx 18 label bg fg (x+(w*2),(y-9));
   if label = "Multiplayer" && selected then begin
     let fields = Menu.multiplayer_fields menu in
-    let height_dif = render_fields ctx menu fields (x,y+30) (200,h) in begin
-      (Menu.get_button menu label |> Menu.update_button (x,y) (w,h), 
-       60 + height_dif)
-    end
+    render_fields ctx menu fields (x,y+30) (200,h);
+    (Menu.get_button menu label |> Menu.update_button (x,y) (w,h), 60)
   end
   else begin
     (Menu.get_button menu label |> Menu.update_button (x,y) (w,h), 30)
   end
 end
 
-let render_buttons (ctx:t) (menu:Menu.t) (coords:int*int) : Menu.t = begin
-  let (x,y) = coords in
-  let x_offset = x/2 in
+let render_buttons (ctx:t) (menu:Menu.t) (coords:int*int) : Menu.t =
+  let (x, y) = coords in
+  let x_offset = x / 2 in
   let buttons = Menu.buttons menu in
-  let height = ref ((y+80)) in
-  let updated_buttons = 
-    List.mapi (fun i (label, button) -> begin
-          let selected = Menu.button_selected menu label in
-          let updated_button_info = render_checkbox_button ctx menu 
-              ((x+x_offset), !height) (20, 20) label selected in begin
-            let updated_button = fst updated_button_info in begin
-              height := !height + (snd updated_button_info);
-              (label, updated_button)
-            end
+  let height = ref (y + 80) in
+  let menu_r = ref menu in 
+  let updated_buttons = List.mapi (fun i (label, button) -> begin
+        let selected = Menu.button_selected !menu_r label in
+        let updated_button_info = render_checkbox_button ctx !menu_r 
+            ((x+x_offset), !height) (20, 20) label selected in begin
+          let updated_button = fst updated_button_info in begin
+            height := !height + (snd updated_button_info);
+            (label, updated_button)
           end
-        end ) buttons 
-  in 
-  Sdl.render_present ctx.renderer;
-  Menu.update_buttons menu updated_buttons
-end
+        end
+      end ) buttons in begin
+    Sdl.render_present ctx.renderer;
+    menu_r := Menu.update_buttons !menu_r updated_buttons;
+  end;
+  !menu_r
 
 
-let render_menu (ctx:t) (menu:Menu.t) = begin
+let render_menu (ctx:t) (menu:Menu.t) : Menu.t = begin
   set_color (178, 249, 255) ctx; 
   let (w,h) = Sdl.get_window_size ctx.window in
   let menu_w = w/2 in

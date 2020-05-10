@@ -11,9 +11,9 @@ type input_type = Button of string | Text of string
     textfield*)
 type m_field
 
-(** [init button_labels ] initializes a menu with buttons that have labels
-    [button_labels] *)
-val init : (string*string) list -> t
+(** [init gfx button_labels] initializes a menu with buttons that have labels
+    [button_labels] and displays it using rendering function [gfx]. *)
+val init : (t -> t) -> (string*string) list -> unit
 
 (** [multiplayer_fields menu] is the text input fields associated
     with multiplayer. *)
