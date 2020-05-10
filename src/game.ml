@@ -173,7 +173,6 @@ module Make (S : State.S) = struct
   (** [loop game] is unit with the side effect of running a game loop for the
       game. *)
   let rec loop (game:t) : unit =
-    Audio.loop_music game.audio;
     let inputs = match game.state with 
       | Playing -> game.game_inputs.event_driven
       | GameMenu -> game.menu_inputs
@@ -189,7 +188,7 @@ module Make (S : State.S) = struct
     let game =
       if delta < 1000 / 60 then game else
         game_helper game delta time
-    in if game.quit then () else loop game
+    in if game.quit then Audio.stop_music game.audio else loop game
 
 
 
@@ -197,6 +196,7 @@ module Make (S : State.S) = struct
   let init (audio : Audio.t) (graphics : Graphics.t) (level : int)
       (menu_controls : (Sdl.keycode * menu_input) list)
       (game_controls : (Sdl.keycode * game_input) list) : unit =
+    Audio.loop_music audio;
     Random.self_init ();
     Audio.start_music audio;
     let menu_inputs = Hashtbl.create 6 in

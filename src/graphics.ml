@@ -253,6 +253,7 @@ let render_buttons (ctx:t) (menu:M.t) (coords:int*int) : M.t =
 
 let render_menu (ctx:t) (menu:M.t) : M.t = begin
   set_color (178, 249, 255) ctx; 
+  Sdl.render_clear ctx.renderer |> unpack "Failed to clear renderer";
   let (w,h) = Sdl.get_window_size ctx.window in
   let menu_w = w/2 in
   let menu_h = h/2 in

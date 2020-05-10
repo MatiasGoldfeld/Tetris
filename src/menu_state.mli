@@ -50,6 +50,6 @@ val is_multiplayer : t -> bool
 
 val b_type : button -> string
 
-val should_quit_menu : t -> bool
+val should_start_game : t -> bool
 
-val start_game : t  -> t
+val set_start_game : t -> bool -> t
