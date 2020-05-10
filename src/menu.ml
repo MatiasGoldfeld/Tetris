@@ -1,6 +1,7 @@
 type input_type = Button of string | Text of string
 
 type button = {
+  on_click: unit -> unit;
   button_type: input_type;
   coords: (int*int);
   dimensions: (int*int);
@@ -20,6 +21,7 @@ type t = {
 }
 
 let init_empty_button b_type = {
+  on_click = (fun x -> x );
   button_type = Button b_type;
   coords= (0,0);
   dimensions = (0,0);
@@ -34,7 +36,7 @@ let init_empty_text label =
 
 let init labels = 
   let multiplayer_fields = 
-    [init_empty_text "Host"; init_empty_text "Address"] in
+    [init_empty_text "Address"] in
   {
     buttons = List.map 
         (fun (label, b_type) -> 
@@ -48,11 +50,14 @@ let init labels =
 
 let get_button menu label = List.assoc label menu.buttons
 
+let button_type button = button.button_type
+
 let buttons menu = menu.buttons
 
 let make_button 
-    (coords:int*int) (dimensions:int*int) b_type =
+    (coords:int*int) (dimensions:int*int) b_type on_click =
   {
+    on_click = on_click;
     button_type = Button b_type;
     coords = coords;
     dimensions = dimensions;
@@ -87,8 +92,10 @@ let button_selected menu label =
 
 let mouse_clicked menu click_coords =
   { menu with buttons = List.map (fun (label, button) ->
-        if in_button button click_coords then
+        if in_button button click_coords then begin
+          button.on_click ();
           (label, {button with selected = not button.selected})
+        end
         else (label, button))
         menu.buttons 
   }

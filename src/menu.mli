@@ -21,7 +21,7 @@ val multiplayer_fields : t -> (string * m_field) list
 
 (** [ make_button coords size ] creates a button at coordinates [coords]
     and of size [size] *)
-val make_button : int*int -> int*int -> string -> button
+val make_button : int*int -> int*int -> string -> (unit -> unit) -> button
 
 (** [ update_button coords size ] updates a button, giving it new coordinates
     [coords] and size [size] *)
