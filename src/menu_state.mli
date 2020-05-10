@@ -47,3 +47,9 @@ val init : (string * string * (t->t)) list -> t
 val toggle_multiplayer : t -> t
 
 val is_multiplayer : t -> bool
+
+val b_type : button -> string
+
+val should_quit_menu : t -> bool
+
+val start_game : t  -> t

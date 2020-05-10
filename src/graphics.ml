@@ -57,7 +57,7 @@ let render_square (rect:Sdl.rect) (ctx:t) ?(a:int=255) (color:color) : unit =
 let fill_coords (x:int) (y:int) (w:int) (h:int) (ctx:t) : unit = 
   let rect = Sdl.Rect.create x y w h in fill_rect rect ctx
 
-(** [create_duck_texture renderer] is the texture of the duck from [renderer]. *)
+(** [create_duck_texture renderer] is the texture of the duck from [renderer].*)
 let create_duck_texture (renderer:Sdl.renderer) 
     (image_path:string) : Tsdl.Sdl.texture= 
   let surface = (Tsdl_image.Image.load image_path) 
@@ -166,16 +166,18 @@ end
 (** [render_button ctx x y w h border selected] is unit with byproduct of 
     rendering a button with [ctx] according to the parameters [x], [y], [w], and 
     [h], with border [border] and state [selected]. *)
-let render_button (ctx:t) x y w h (border:int) button_color border_color
+let render_button (ctx:t) x y w h (border:int) border_color button_color 
     selected = begin
   set_color (0, 0, 0) ctx; 
-  let outline = Sdl.Rect.create (x-(border)/2) (y-(border)/2) (w+border) (h+border) in
+  let outline = Sdl.Rect.create (x-(border)/2) (y-(border)/2) (w+border) 
+      (h+border) in
   fill_rect outline ctx;
   set_color button_color ctx; 
   let rect = Sdl.Rect.create x y w h in
   fill_rect rect ctx;
 end
 
+(** The module that is equivalent to a Menu_state. *)
 module M = Menu_state
 
 let render_fields (ctx:t) (menu:M.t) fields coords dimensions = begin
@@ -195,7 +197,8 @@ let render_action_button ctx menu (x, y) (w, h) (label:string) selected = begin
   render_button ctx x y w h 2 border_color button_color selected;
   let bg = Sdl.Color.create 100 100 100 255 in
   let fg = Sdl.Color.create 200 200 200 255 in
-  draw_text ctx 18 label bg fg (x+w,(y-9));
+  draw_text ctx 18 label bg fg (x,(y));
+  (M.get_button menu label |> M.update_button (x,y) (w,h), 30)
 end
 
 let render_checkbox_button ctx menu (x, y) (w, h) (label:string) selected = begin
@@ -216,22 +219,33 @@ let render_checkbox_button ctx menu (x, y) (w, h) (label:string) selected = begi
   end
 end
 
+let rendered_button ctx button height (x,y) menu_r label= 
+  let updated_button_info = begin
+    match Menu_state.b_type button with 
+    | "checkbox" -> 
+      let selected = M.button_selected !menu_r label in
+      render_checkbox_button ctx !menu_r 
+        (x, !height) (20, 20) label selected
+    | "action" ->
+      let selected = M.button_selected !menu_r label in
+      render_action_button ctx !menu_r 
+        (x, !height) (100, 40) label selected
+    | _ -> failwith "Invalid button string type"
+  end in
+  let updated_button = fst updated_button_info in 
+  ((label, updated_button), snd updated_button_info)
+
+
 let render_buttons (ctx:t) (menu:M.t) (coords:int*int) : M.t =
   let (x, y) = coords in
   let x_offset = x / 2 in
   let buttons = M.buttons menu in
   let height = ref (y + 80) in
   let menu_r = ref menu in 
-  let updated_buttons = List.mapi (fun i (label, button) -> begin
-        let selected = M.button_selected !menu_r label in
-        let updated_button_info = render_checkbox_button ctx !menu_r 
-            ((x+x_offset), !height) (20, 20) label selected in begin
-          let updated_button = fst updated_button_info in begin
-            height := !height + (snd updated_button_info);
-            (label, updated_button)
-          end
-        end
-      end ) buttons in begin
+  let updated_buttons = List.mapi (fun i (label, button) -> 
+      let (b, h) = rendered_button ctx button height (x+x_offset,y) menu_r label
+      in height := !height + h; b
+    ) buttons in begin
     Sdl.render_present ctx.renderer;
     menu_r := M.update_buttons !menu_r updated_buttons;
   end;
@@ -263,8 +277,8 @@ let menu_maker (ctx:t) (items:(string * bool) list) ((x,y):int * int)
   fill_coords (x - width / 2) (y - height / 2) width height ctx;
   let draw_item n (text, on) =
     let fg = if on then fg_on else fg_off in
-    let pos = x - width / 2 + size * 2, y - height / 2 + size * (1 + 2 * n) in
-    draw_text ctx size text fg bg pos
+    let pos = x - width / 2 + size * 2, y - height / 2 + size * (1 + 2 * n) 
+    in draw_text ctx size text fg bg pos
   in List.iteri draw_item items
 
 module type GameRenderer = sig
@@ -286,8 +300,8 @@ module MakeGameRenderer (S : State.S) = struct
     (* Draw every tile of every row and column *)
     for row = 0 to rows - 1 do
       for col = 0 to cols - 1 do
-        let rect = Sdl.Rect.create (x + col * size) (y + row * size) size size in
-        match S.value state col row with
+        let rect = Sdl.Rect.create (x + col * size) (y + row * size) size size 
+        in match S.value state col row with
         | State.Static color ->
           render_square rect ctx color
         | State.Falling (color, a) ->
@@ -344,8 +358,8 @@ module MakeGameRenderer (S : State.S) = struct
     Sdl.free_surface surf;
     Sdl.destroy_texture texture
 
-  (** [draw_game_info ctx state size pos] renders the game information of [state]
-      with size [size] at coordinates [pos]. *)
+  (** [draw_game_info ctx state size pos] renders the game information of 
+      [state] with size [size] at coordinates [pos]. *)
   let draw_game_info (ctx:t) (state:S.t) (size:int) (x,y:int*int) : unit =
     let bg = let r, g, b = ctx.bg_color in Sdl.Color.create r g b 255 in
     let fg = Sdl.Color.create 200 200 200 255 in

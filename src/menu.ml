@@ -1,5 +1,7 @@
 open Tsdl
 
+type mode = SinglePlayer | MultiplayerHost | MultiplayerFriend
+
 type t = {
   menu : Menu_state.t;
   audio : Audio.t;
@@ -38,7 +40,8 @@ let game_controls = [
     [game]. *)
 let rec handle_events (menu : t) : t =
   let event = Sdl.Event.create () in
-  if not (Sdl.poll_event (Some event)) then menu
+  if not (Sdl.poll_event (Some event)) 
+  then menu
   else handle_events begin
       match Sdl.Event.(enum (get event typ)) with
       | `Mouse_button_down ->
@@ -53,13 +56,19 @@ let rec handle_events (menu : t) : t =
     end
 
 (** [loop menu] is unit with byproduct of running the menu loop. *)
-let rec loop (menu : t) : unit =
+let rec loop (menu : t) : mode =
   let menu = handle_events menu in
   let time = Int32.to_int (Sdl.get_ticks ()) in
   let delta = (time - menu.last_update) in
-  let menu = if delta < 1000 / 60 then menu else
-      {menu with menu = Graphics.render_menu menu.graphics menu.menu}
-  in loop menu
+  if Menu_state.should_quit_menu menu.menu then
+    if Menu_state.is_multiplayer menu.menu then
+      MultiplayerHost
+    else SinglePlayer
+  else begin
+    let menu = if delta < 1000 / 60 then menu else
+        {menu with menu = Graphics.render_menu menu.graphics menu.menu}
+    in loop menu
+  end
 
 let init audio graphics labels = 
   loop {
