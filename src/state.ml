@@ -74,8 +74,11 @@ module Local = struct
   let field_width (state:t) : int =
     Array.length state.playfield.(0)
 
-  let field_height (state:t) : int =
+  let field_state_height (state : t) : int =
     Array.length state.playfield
+
+  let field_height (state:t) : int =
+    field_state_height state / 2
 
   let score (state:t) : int =
     state.score
@@ -97,7 +100,7 @@ module Local = struct
           let abs_col = fst falling_pos + col in
           let abs_row = snd falling_pos + row in
           abs_col >= 0 && abs_col < field_width state &&
-          abs_row >= 0 && abs_row < field_height state &&
+          abs_row >= 0 && abs_row < (field_state_height state) &&
           state.playfield.(abs_row).(abs_col) = None
       end && check_row (col + 1) row
     in
@@ -142,22 +145,27 @@ module Local = struct
 
   let drop_help state =
     let column = 5 - (Tetromino.size state.falling / 2) in
-    if legal state state.falling state.falling_rot (column, 0)
-    then {state with 
-          step_delta = 0;
-          falling_pos = (column, 0);
-          ext_placement_move_count = 0;
-          ext_placement_delta = 0;
-          min_row = 0} |> update_ghost
+    let row = field_height state in
+    if legal state state.falling state.falling_rot (column, row)
+    then
+      {state with 
+       step_delta = 0;
+       falling_pos = (column, row);
+       ext_placement_move_count = 0;
+       ext_placement_delta = 0;
+       min_row = row} |> update_ghost
     else begin
-      if legal state state.falling state.falling_rot (column, -1)
-      then {state with 
-            step_delta = 0;
-            falling_pos = (column, -1);
-            ext_placement_move_count = 0; 
-            ext_placement_delta = 0;
-            min_row = -1} |> update_ghost
-      else raise (Gameover {state with events = EndGame::state.events})
+      if legal state state.falling state.falling_rot (column, row - 1)
+      then begin 
+        {state with 
+         step_delta = 0;
+         falling_pos = (column, row - 1);
+         ext_placement_move_count = 0; 
+         ext_placement_delta = 0;
+         min_row = row - 1} |> update_ghost
+      end
+      else 
+        raise (Gameover {state with events = EndGame::state.events})
     end
 
   (** [drop piece state] is the [state] with a new piece initialized as the 
@@ -197,7 +205,7 @@ module Local = struct
       falling_rot = -1;
       falling_pos = -1, -1;
       ghost_row = -1;
-      playfield = Array.make_matrix height width None
+      playfield = Array.make_matrix (2*height) width None
     }
     |> drop
     |> recalculate_fall_speed
@@ -222,7 +230,7 @@ module Local = struct
     else state.playfield.(height) <- Array.make (field_width state) None
 
   let rec clear_lines_helper state height line_dif =
-    if height >= 0 then begin
+    if height >= field_height state then begin
       if (check_row state.playfield.(height))
       then
         (fill_in_rows state height;
@@ -239,12 +247,12 @@ module Local = struct
       else {state with score = new_score}
 
   let clear_lines state = 
-    clear_lines_helper state (field_height state - 1) 0
+    clear_lines_helper state (field_state_height state - 1) 0
 
   let value (state:t) (c:int) (r:int) : v =
     if r < 0 || c < 0 || r >= field_height state || c >= field_width state
     then Empty
-    else match state.playfield.(r).(c) with
+    else match state.playfield.(r + field_height state).(c) with
       | Some color -> Static color
       | None ->
         let tet = state.falling in
@@ -252,12 +260,12 @@ module Local = struct
         let fall_rot = state.falling_rot in
         if c >= fall_c && c - fall_c < Tetromino.size state.falling then
           let check = Tetromino.value tet fall_rot (c - fall_c) in
-          match check (r - fall_r) with
+          match check (r - fall_r + field_height state) with
           | Some color ->
             let a = (500 - state.ext_placement_delta) * 255 / 500 in
             Falling (color, a)
           | None ->
-            match check (r - state.ghost_row) with
+            match check (r - state.ghost_row + field_height state) with
             | Some color -> Ghost (color, 95)
             | None -> Empty
         else
