@@ -1,11 +1,6 @@
 type input_type = Button of string | Text of string
 
-type button = {
-  button_type: input_type;
-  coords: (int*int);
-  dimensions: (int*int);
-  selected: bool;
-}
+
 
 type m_field = {
   text: string;
@@ -13,14 +8,22 @@ type m_field = {
 }
 
 type t = {
+  multiplayer: bool;
   buttons: (string*button) list;
   multiplayer_fields: (string*m_field) list;
   volume: float;
   level: int;
-}
+} and button = {
+    on_click: t -> t;
+    button_type: input_type;
+    coords: (int*int);
+    dimensions: (int*int);
+    selected: bool;
+  }
 
 
 let init_empty_button b_type = {
+  on_click = (fun x -> x);
   button_type = Button b_type;
   coords= (0,0);
   dimensions = (0,0);
@@ -37,8 +40,11 @@ let get_button menu label = List.assoc label menu.buttons
 
 let buttons menu = menu.buttons
 
-let make_button (coords:int*int) (dimensions:int*int) b_type =
+let toggle_multiplayer menu = {menu with multiplayer = not menu.multiplayer}
+
+let make_button (coords:int*int) (dimensions:int*int) b_type on_click =
   {
+    on_click = on_click;
     button_type = Button b_type;
     coords = coords;
     dimensions = dimensions;
@@ -66,24 +72,26 @@ let in_button button click_coords : bool =
                    && button_y+(snd button.dimensions) >= click_y in
   in_x_range && in_y_range
 
+let is_multiplayer menu = menu.multiplayer
+
 let button_selected menu label =
   let button = List.assoc label menu.buttons in
   button.selected
 
 let mouse_clicked menu click_coords =
-  { menu with buttons = List.map (fun (label, button) ->
-        if in_button button click_coords then
-          (label, {button with selected = not button.selected})
-        else (label, button))
-        menu.buttons 
-  }
+  List.fold_left (fun  menu (label, button) ->
+      if in_button button click_coords then
+        button.on_click menu
+      else menu
+    ) menu menu.buttons
 
 let init labels = 
   let mp_fields = [init_empty_text "Host"; init_empty_text "Address"] in
   {
+    multiplayer= false;
     buttons = List.map 
-        (fun (label, b_type) -> 
-           (label, init_empty_button b_type)
+        (fun (label, b_type, on_click) -> 
+           (label, make_button (0,0) (0,0) b_type on_click)
         )
         labels;
     multiplayer_fields = mp_fields;
