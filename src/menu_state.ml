@@ -1,5 +1,5 @@
 type input_type = Button of string | Text of string
-
+open Str
 
 
 type m_field = {
@@ -50,8 +50,7 @@ let b_type button =
 
 let toggle_multiplayer menu = {menu with multiplayer = not menu.multiplayer}
 
-(* TODO: validate address *)
-let update_address menu address = {menu with address = address}
+let update_address menu address = {menu with address = String.trim address }
 
 let address menu = menu.address
 
@@ -76,9 +75,24 @@ let update_buttons menu buttons =
     menu with buttons=buttons
   }
 
-let set_start_game menu value = {menu with start_game = value}
+let set_start_game menu value = 
+  let start_game = begin
+    let regex = Str.regexp 
+        "\\b(25[0-5]\\|2[0-4][0-9]\\|1[0-9][0-9]\\|[1-9]?[0-9])\\.
+        (25[0-5]\\|2[0-4][0-9]\\|1[0-9][0-9]\\|[1-9]?[0-9])\\.
+        (25[0-5]\\|2[0-4][0-9]\\|1[0-9][0-9]\\|[1-9]?[0-9])\\.
+        (25[0-5]\\|2[0-4][0-9]\\|1[0-9][0-9]\\|[1-9]?[0-9])\\b" 
+    in
+    print_endline menu.address;
+    if Str.string_match regex menu.address 0 
+    then value
+    else false
+  end in
+  {menu with start_game = start_game && value}
 
-let should_start_game menu = menu.start_game 
+let should_start_game menu = 
+  menu.start_game
+
 
 let in_button button click_coords : bool = 
   let (button_x, button_y) = button.coords in
