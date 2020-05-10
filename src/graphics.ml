@@ -166,17 +166,15 @@ end
 (** [render_button ctx x y w h border selected] is unit with byproduct of 
     rendering a button with [ctx] according to the parameters [x], [y], [w], and 
     [h], with border [border] and state [selected]. *)
-let render_button (ctx:t) x y w h (border:int) selected = begin
+let render_button (ctx:t) x y w h (border:int) button_color border_color
+    selected = begin
   set_color (0, 0, 0) ctx; 
   let outline = Sdl.Rect.create (x-(border)/2) (y-(border)/2) (w+border) 
       (h+border) in
   fill_rect outline ctx;
-  set_color (255, 255, 255) ctx; 
-  let bg = Sdl.Color.create 100 100 100 0 in
-  let fg = Sdl.Color.create 200 200 200 0 in
+  set_color button_color ctx; 
   let rect = Sdl.Rect.create x y w h in
   fill_rect rect ctx;
-  if selected then draw_text ctx 16 "X" bg fg (x,y);
 end
 
 (** The module that is equivalent to a Menu_state. *)
@@ -186,28 +184,34 @@ let render_fields (ctx:t) (menu:M.t) fields coords dimensions = begin
   set_color (255, 255, 255) ctx; 
   let (x,y) = coords in
   let (w,h) = dimensions in
-  List.iteri (fun i field -> 
-      let rect = Sdl.Rect.create x (y+30*i) w h in begin
-        Sdl.set_text_input_rect (Some rect);
-        fill_rect rect ctx;
-        Sdl.start_text_input();
-      end
-    ) fields;
-  30 * (List.length fields);
+  let rect = Sdl.Rect.create x y w h in begin
+    Sdl.set_text_input_rect (Some rect);
+    fill_rect rect ctx;
+    Sdl.start_text_input();
+  end
 end
 
+let render_action_button ctx menu (x, y) (w, h) (label:string) selected = begin
+  let border_color = (68,53,91) in
+  let button_color = (255,255,255) in
+  render_button ctx x y w h 2 border_color button_color selected;
+  let bg = Sdl.Color.create 100 100 100 255 in
+  let fg = Sdl.Color.create 200 200 200 255 in
+  draw_text ctx 18 label bg fg (x+w,(y-9));
+end
 
-let render_button_option ctx menu (x, y) (w, h) (label:string) selected = begin
-  render_button ctx x y w h 2 selected;
-  let bg = Sdl.Color.create 100 100 100 0 in
-  let fg = Sdl.Color.create 200 200 200 0 in
+let render_checkbox_button ctx menu (x, y) (w, h) (label:string) selected = begin
+  let border_color = (0,0,0) in
+  let button_color = (255,255,255) in
+  render_button ctx x y w h 2 border_color button_color selected;
+  let bg = Sdl.Color.create 100 100 100 255 in
+  let fg = Sdl.Color.create 200 200 200 255 in
   draw_text ctx 18 label bg fg (x+(w*2),(y-9));
-  if label = "Multiplayer" && selected then begin
+  if label = "Multiplayer" && Menu_state.is_multiplayer menu then begin
+    draw_text ctx 16 "X" bg fg (x,y);
     let fields = M.multiplayer_fields menu in
-    let height_dif = render_fields ctx menu fields (x,y+30) (200,h) in begin
-      (M.get_button menu label |> M.update_button (x,y) (w,h), 
-       60 + height_dif)
-    end
+    render_fields ctx menu fields (x,y+30) (200,h);
+    (M.get_button menu label |> M.update_button (x,y) (w,h), 80)
   end
   else begin
     (M.get_button menu label |> M.update_button (x,y) (w,h), 30)
@@ -222,7 +226,7 @@ let render_buttons (ctx:t) (menu:M.t) (coords:int*int) : M.t =
   let menu_r = ref menu in 
   let updated_buttons = List.mapi (fun i (label, button) -> begin
         let selected = M.button_selected !menu_r label in
-        let updated_button_info = render_button_option ctx !menu_r 
+        let updated_button_info = render_checkbox_button ctx !menu_r 
             ((x+x_offset), !height) (20, 20) label selected in begin
           let updated_button = fst updated_button_info in begin
             height := !height + (snd updated_button_info);

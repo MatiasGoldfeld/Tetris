@@ -11,7 +11,9 @@ let main () =
     let graphics = Graphics.init false "./resources/"  in
     Audio.adjust_music audio 0.05; 
     Menu.init audio graphics
-      [("Multiplayer", "checkbox"); ("Start", "checkbox")];
+      [("Multiplayer", "checkbox", 
+        (fun m -> Menu_state.toggle_multiplayer m )); 
+       ("Start", "checkbox", (fun m -> print_endline "start clicked";  m))];
     Sdl.quit ();
     exit 0
 

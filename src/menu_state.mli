@@ -15,9 +15,10 @@ type t
     with multiplayer. *)
 val multiplayer_fields : t -> (string * m_field) list
 
-(** [ make_button coords size ] creates a button at coordinates [coords]
-    and of size [size] *)
-val make_button : int*int -> int*int -> string -> button
+(** [ make_button coords size on_click ] creates a button at coordinates 
+    [coords] and of size [size]. When the button is clicked, [on_click] is
+    called. *)
+val make_button : int*int -> int*int -> string -> (t->t)-> button
 
 (** [ update_button coords size ] updates a button, giving it new coordinates
     [coords] and size [size] *)
@@ -40,6 +41,9 @@ val mouse_clicked : t -> (int*int) -> t
     has been selected by the user. *)
 val button_selected : t -> string -> bool
 
-(** [init button_labels] initializes a menu with buttons that
-    have labels [button_labels]. *)
-val init : (string * string) list -> t
+(** [init buttons] initializes a menu with buttons. *)
+val init : (string * string * (t->t)) list -> t
+
+val toggle_multiplayer : t -> t
+
+val is_multiplayer : t -> bool
