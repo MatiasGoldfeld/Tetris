@@ -77,8 +77,8 @@ module type S = sig
       at the base level. *)
   val hard_drop : t -> t
 
-  (** [handle_events f state] is the state after applying [f] to each event in the
-      queue of events in [state] *)
+  (** [handle_events f state] is the state after applying [f] to each event in 
+      the queue of events in [state] *)
   val handle_events : (event -> unit) -> t -> t
 end
 

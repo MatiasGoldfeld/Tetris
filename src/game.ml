@@ -102,36 +102,72 @@ module Make (S : State.S) = struct
       Sdl.K.left; Sdl.K.right;
       Sdl.K.b; Sdl.K.a;
     ] in
-    let next = if key = List.nth code (game.konami)
+    let next = 
+      if key = List.nth code (game.konami)
       then game.konami + 1
       else 0
-    in if next >= List.length code
+    in 
+    if next >= List.length code
     then {game with konami = 0; graphics = Graphics.toggle_duck game.graphics}
     else {game with konami = next}
+
+
+
+  (** [key_down_helper inputs key game repeat] is the game after handling
+      the key down inputs. *)
+  let key_down_helper inputs key game repeat=
+    if Hashtbl.mem inputs key then
+      let action, repeatable = Hashtbl.find inputs key in
+      if repeatable || not repeat then
+        action game
+      else game
+    else game
+
+
 
   (** [handle_events] handles all SDL events by using actions from [inputs] in
       [game]. *)
   let rec handle_events (inputs:inputs_t) (game:t) : t =
     let event = Sdl.Event.create () in
-    if not (Sdl.poll_event (Some event)) then game
+    if not (Sdl.poll_event (Some event)) 
+    then game
     else handle_events inputs begin
         match Sdl.Event.(enum (get event typ)) with
         | `Key_down ->
           let key = Sdl.Event.(get event keyboard_keycode) in
           let game = konami_code key game in
           let repeat = Sdl.Event.(get event keyboard_repeat) <> 0 in
-          if Hashtbl.mem inputs key then
-            let action, repeatable = Hashtbl.find inputs key in
-            if repeatable || not repeat then
-              action game
-            else game
-          else game
+          key_down_helper inputs key game repeat
         | `Quit ->
           Sdl.log "Quit event handled from game";
           Sdl.quit ();
           exit 0
         | _ -> game
       end
+
+
+  (** [game_helper game delta time] is a game with all of the updated
+      parts from a cycle for the game. *)
+  let game_helper game delta time= 
+    match game.state with
+    | Gameover -> game
+    | GameoverHighscore -> game
+    | Playing | GameMenu ->
+      let soft_sc = Sdl.get_scancode_from_key game.game_inputs.soft_drop in
+      let soft_down = if game.state = GameMenu then false else
+          (Sdl.get_keyboard_state ()).{soft_sc} = 1 in
+      let play_state =
+        if game.state = GameMenu && S.pauseable
+        then game.play_state
+        else S.update game.play_state delta soft_down
+      in 
+      let menu = if game.state = Playing then [] else
+          [("Resume", game.gmenu_pos = 0); ("Quit", game.gmenu_pos = 1)] in
+      GR.render game.graphics [game.play_state] menu;
+      { game with play_state = play_state; last_update = time }
+
+
+
 
   (** [loop game] is unit with the side effect of running a game loop for the
       game. *)
@@ -147,24 +183,14 @@ module Make (S : State.S) = struct
     let time = Int32.to_int (Sdl.get_ticks ()) in
     let delta = (time - game.last_update) in
     let game =
-      if delta < 1000 / 60 then game else
-        match game.state with
-        | Gameover -> game
-        | GameoverHighscore -> game
-        | Playing | GameMenu ->
-          let soft_sc = Sdl.get_scancode_from_key game.game_inputs.soft_drop in
-          let soft_down = if game.state = GameMenu then false else
-              (Sdl.get_keyboard_state ()).{soft_sc} = 1 in
-          let play_state =
-            if game.state = GameMenu && S.pauseable
-            then game.play_state
-            else S.update game.play_state delta soft_down
-          in 
-          let menu = if game.state = Playing then [] else
-              [("Resume", game.gmenu_pos = 0); ("Quit", game.gmenu_pos = 1)] in
-          GR.render game.graphics [game.play_state] menu;
-          { game with play_state = play_state; last_update = time }
+      if delta < 1000 / 60 
+      then game 
+      else
+        game_helper game time delta
     in loop game
+
+
+
 
   let init (audio : Audio.t) (graphics : Graphics.t) (level : int)
       (menu_controls : (Sdl.keycode * menu_input) list)

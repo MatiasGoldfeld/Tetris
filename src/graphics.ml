@@ -57,7 +57,7 @@ let render_square (rect:Sdl.rect) (ctx:t) ?(a:int=255) (color:color) : unit =
 let fill_coords (x:int) (y:int) (w:int) (h:int) (ctx:t) : unit = 
   let rect = Sdl.Rect.create x y w h in fill_rect rect ctx
 
-(** [create_duck_texture renderer] is the texture of the duck from [renderer]. *)
+(** [create_duck_texture renderer] is the texture of the duck from [renderer].*)
 let create_duck_texture (renderer:Sdl.renderer) 
     (image_path:string) : Tsdl.Sdl.texture= 
   let surface = (Tsdl_image.Image.load image_path) 
@@ -168,7 +168,8 @@ end
     [h], with border [border] and state [selected]. *)
 let render_button (ctx:t) x y w h (border:int) selected = begin
   set_color (0, 0, 0) ctx; 
-  let outline = Sdl.Rect.create (x-(border)/2) (y-(border)/2) (w+border) (h+border) in
+  let outline = Sdl.Rect.create (x-(border)/2) (y-(border)/2) (w+border) 
+      (h+border) in
   fill_rect outline ctx;
   set_color (255, 255, 255) ctx; 
   let bg = Sdl.Color.create 100 100 100 0 in
@@ -178,6 +179,7 @@ let render_button (ctx:t) x y w h (border:int) selected = begin
   if selected then draw_text ctx 16 "X" bg fg (x,y);
 end
 
+(** The module that is equivalent to a Menu_state. *)
 module M = Menu_state
 
 let render_fields (ctx:t) (menu:M.t) fields coords dimensions = begin
@@ -259,8 +261,8 @@ let menu_maker (ctx:t) (items:(string * bool) list) ((x,y):int * int)
   fill_coords (x - width / 2) (y - height / 2) width height ctx;
   let draw_item n (text, on) =
     let fg = if on then fg_on else fg_off in
-    let pos = x - width / 2 + size * 2, y - height / 2 + size * (1 + 2 * n) in
-    draw_text ctx size text fg bg pos
+    let pos = x - width / 2 + size * 2, y - height / 2 + size * (1 + 2 * n) 
+    in draw_text ctx size text fg bg pos
   in List.iteri draw_item items
 
 module type GameRenderer = sig
@@ -282,8 +284,8 @@ module MakeGameRenderer (S : State.S) = struct
     (* Draw every tile of every row and column *)
     for row = 0 to rows - 1 do
       for col = 0 to cols - 1 do
-        let rect = Sdl.Rect.create (x + col * size) (y + row * size) size size in
-        match S.value state col row with
+        let rect = Sdl.Rect.create (x + col * size) (y + row * size) size size 
+        in match S.value state col row with
         | State.Static color ->
           render_square rect ctx color
         | State.Falling (color, a) ->
@@ -340,8 +342,8 @@ module MakeGameRenderer (S : State.S) = struct
     Sdl.free_surface surf;
     Sdl.destroy_texture texture
 
-  (** [draw_game_info ctx state size pos] renders the game information of [state]
-      with size [size] at coordinates [pos]. *)
+  (** [draw_game_info ctx state size pos] renders the game information of 
+      [state] with size [size] at coordinates [pos]. *)
   let draw_game_info (ctx:t) (state:S.t) (size:int) (x,y:int*int) : unit =
     let bg = let r, g, b = ctx.bg_color in Sdl.Color.create r g b 255 in
     let fg = Sdl.Color.create 200 200 200 255 in

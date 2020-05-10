@@ -137,7 +137,8 @@ let find_coord_val (piece:t) (rot:int) (x:int) (y:int) : color option =
 
 let value (piece:t) (rot:int) (col:int) (row:int) : color option = 
   let s = size piece in
-  if col >= s || col < 0 || row >= s || row < 0 then None
+  if col >= s || col < 0 || row >= s || row < 0 
+  then None
   else find_coord_val piece rot col row
 
 let wall_kicks (piece:t) (rot:int) (dir:[`CCW | `CW]) : (int * int) list =

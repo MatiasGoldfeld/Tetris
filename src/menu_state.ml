@@ -71,21 +71,19 @@ let button_selected menu label =
   button.selected
 
 let mouse_clicked menu click_coords =
-  { menu with buttons = List.map (fun (label, button) ->
-        if in_button button click_coords then
-          (label, {button with selected = not button.selected})
-        else (label, button))
-        menu.buttons 
+  { menu with buttons = List.map 
+                  (fun (label, button) ->
+                     if in_button button click_coords 
+                     then (label, {button with selected = not button.selected})
+                     else (label, button)) 
+                  menu.buttons 
   }
 
 let init labels = 
   let mp_fields = [init_empty_text "Host"; init_empty_text "Address"] in
   {
     buttons = List.map 
-        (fun (label, b_type) -> 
-           (label, init_empty_button b_type)
-        )
-        labels;
+        (fun (label, b_type) -> (label, init_empty_button b_type)) labels;
     multiplayer_fields = mp_fields;
     volume = 0.05;
     level = 0;

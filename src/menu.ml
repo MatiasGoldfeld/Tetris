@@ -38,7 +38,8 @@ let game_controls = [
     [game]. *)
 let rec handle_events (menu : t) : t =
   let event = Sdl.Event.create () in
-  if not (Sdl.poll_event (Some event)) then menu
+  if not (Sdl.poll_event (Some event)) 
+  then menu
   else handle_events begin
       match Sdl.Event.(enum (get event typ)) with
       | `Mouse_button_down ->
