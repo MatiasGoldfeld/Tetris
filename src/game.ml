@@ -54,6 +54,15 @@ module Make (S : State.S) = struct
     quit : bool;
   }
 
+
+
+  (** [retry_or_resume game] is the state of [game] based on if it should be a 
+      retry or a resume game. *)
+  let retry_or_resume game =
+    if game.state = Gameover
+    then {game with state = Playing; play_state = S.init 10 20 1}
+    else {game with state = Playing;}
+
   (** [menu_inputs_press inputs (k, i)] maps key [k] to
       input [i] in [inputs]. *)
   let menu_inputs_press
@@ -69,7 +78,7 @@ module Make (S : State.S) = struct
     | MDown  ->
       add ((fun x -> {x with gmenu_pos = min 1 (x.gmenu_pos + 1)}), true)
     | MEnter -> add ((fun x -> match x.gmenu_pos with
-        | 0 -> { x with state = Playing }
+        | 0 -> retry_or_resume x
         | 1 -> { x with quit = true }
         | _ -> failwith "Invalid in-game menu position"
       ), false)
@@ -151,7 +160,11 @@ module Make (S : State.S) = struct
       parts from a cycle for the game. *)
   let game_helper game delta time= 
     match game.state with
-    | Gameover -> game
+    | Gameover -> 
+      let menu = 
+        [("Retry", game.gmenu_pos = 0); ("Quit", game.gmenu_pos = 1)] in
+      GR.render game.graphics [game.play_state] menu;
+      game
     | GameoverHighscore -> game
     | Playing | GameMenu ->
       let soft_sc = Sdl.get_scancode_from_key game.game_inputs.soft_drop in
@@ -177,9 +190,10 @@ module Make (S : State.S) = struct
       | Playing -> game.game_inputs.event_driven
       | GameMenu -> game.menu_inputs
       | Gameover ->
-        let tbl = Hashtbl.create 1 in
-        Hashtbl.add tbl Sdl.K.escape ((fun g -> { g with quit = true }), false);
-        tbl
+        game.menu_inputs
+      (* let tbl = Hashtbl.create 1 in
+         Hashtbl.add tbl Sdl.K.escape ((fun g -> { g with quit = true }), false);
+         tbl *)
       | GameoverHighscore -> Hashtbl.create 0
     in
     let game = handle_events inputs game in
@@ -191,6 +205,15 @@ module Make (S : State.S) = struct
     in if game.quit then Audio.stop_music game.audio else loop game
 
 
+
+  (** [gameover_loop game play_state] is the loop of game is a gameover is 
+      caught and a new game is started. *)
+  let rec gameover_loop game play_state =
+    try loop {
+        game with state = Gameover;
+                  play_state = play_state;
+      }
+    with S.Gameover play_state -> gameover_loop game play_state
 
 
   let init (audio : Audio.t) (graphics : Graphics.t) (level : int)
@@ -219,8 +242,6 @@ module Make (S : State.S) = struct
       quit = false;
     } in
     try loop game
-    with S.Gameover play_state -> loop {
-        game with state = Gameover;
-                  play_state = play_state;
-      }
+    with S.Gameover play_state -> 
+      gameover_loop game play_state
 end
