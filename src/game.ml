@@ -183,7 +183,7 @@ module Make (S : State.S) = struct
   let init (level:int)
       (menu_controls:(Sdl.keycode * menu_input) list)
       (game_controls:(Sdl.keycode * game_input) list)
-      (audio:Audio.t) (graphics:Graphics.t) (menu:Menu.t)=
+      (audio:Audio.t) (graphics:Graphics.t) (menu:Menu.t)= begin
     Random.self_init ();
     Audio.start_music audio;
     let menu_inputs = Hashtbl.create 6 in
@@ -193,6 +193,11 @@ module Make (S : State.S) = struct
     } in
     List.iter (menu_inputs_press menu_inputs) menu_controls;
     List.iter (game_inputs_press game_inputs) game_controls;
+    let updated_menu = begin
+      let b = Menu.make_button (0,0) (10,10) "checkbox" (fun () -> print_endline "hi") in
+      Menu.update_buttons menu [("test", b)]
+    end
+    in Menu.mouse_clicked menu (5,5);
     loop {
       state = MainMenu;
       play_state = S.init 10 20 level;
@@ -205,4 +210,5 @@ module Make (S : State.S) = struct
       gmenu_pos = 0;
       konami = 0;
     }
+  end
 end
