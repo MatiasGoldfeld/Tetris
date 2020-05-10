@@ -20,7 +20,6 @@ module type S = sig
   (** The representation of a Tetris gamestate. *)
   type t
 
-
   exception Gameover of t
 
   (** [pauseable] is whether this state is pauseable. *)

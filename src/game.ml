@@ -50,6 +50,7 @@ module Make (S : State.S) = struct
     graphics : Graphics.t;
     gmenu_pos : int;
     konami : int;
+    quit : bool;
   }
 
   (** [menu_inputs_press inputs (k, i)] maps key [k] to
@@ -67,8 +68,8 @@ module Make (S : State.S) = struct
     | MDown  ->
       add ((fun x -> {x with gmenu_pos = min 1 (x.gmenu_pos + 1)}), true)
     | MEnter -> add ((fun x -> match x.gmenu_pos with
-        | 0 -> {x with state = Playing}
-        | 1 -> {x with state = Playing} (** TODO: exit to main *)
+        | 0 -> { x with state = Playing }
+        | 1 -> { x with quit = true }
         | _ -> failwith "Invalid in-game menu position"
       ), false)
 
@@ -133,7 +134,10 @@ module Make (S : State.S) = struct
     let inputs = match game.state with 
       | Playing -> game.game_inputs.event_driven
       | GameMenu -> game.menu_inputs
-      | Gameover -> Hashtbl.create 0
+      | Gameover ->
+        let tbl = Hashtbl.create 1 in
+        Hashtbl.add tbl Sdl.K.escape ((fun g -> { g with quit = true }), false);
+        tbl
       | GameoverHighscore -> Hashtbl.create 0
     in
     let game = handle_events inputs game in
@@ -157,7 +161,7 @@ module Make (S : State.S) = struct
               [("Resume", game.gmenu_pos = 0); ("Quit", game.gmenu_pos = 1)] in
           GR.render game.graphics [game.play_state] menu;
           { game with play_state = play_state; last_update = time }
-    in loop game
+    in if game.quit then () else loop game
 
   let init (audio : Audio.t) (graphics : Graphics.t) (level : int)
       (menu_controls : (Sdl.keycode * menu_input) list)
@@ -171,7 +175,7 @@ module Make (S : State.S) = struct
     } in
     List.iter (menu_inputs_press menu_inputs) menu_controls;
     List.iter (game_inputs_press game_inputs) game_controls;
-    loop {
+    let game = {
       state = Playing;
       play_state = S.init 10 20 level;
       last_update = Int32.to_int (Sdl.get_ticks ());
@@ -181,5 +185,11 @@ module Make (S : State.S) = struct
       graphics = graphics;
       gmenu_pos = 0;
       konami = 0;
-    }
+      quit = false;
+    } in
+    try loop game
+    with S.Gameover play_state -> loop {
+        game with state = Gameover;
+                  play_state = play_state;
+      }
 end
