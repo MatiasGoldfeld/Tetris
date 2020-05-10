@@ -19,23 +19,15 @@ type game_input =
   | GHold
 
 type game_state =
-  | MainMenu
   | Playing
   | GameMenu
   | Gameover
   | GameoverHighscore
 
-module type Button = sig
-  type t
-  val onPress : t -> t
-  val coords : t -> (int*int)
-end
-
 module type S = sig
   type t
   val init : int -> (Sdl.keycode * menu_input) list ->
     (Sdl.keycode * game_input) list -> Audio.t -> Graphics.t -> Menu.t -> unit
-  val in_menu : t -> bool
 end
 
 module Make (S : State.S) = struct
@@ -56,12 +48,9 @@ module Make (S : State.S) = struct
     game_inputs : game_inputs_t;
     audio : Audio.t;
     graphics : Graphics.t;
-    menu : Menu.t;
     gmenu_pos : int;
     konami : int;
   }
-
-  let in_menu (game:t) : bool = game.state = GameMenu
 
   (** [menu_inputs_press inputs (k, i)] maps key [k] to
       input [i] in [inputs]. *)
@@ -79,7 +68,7 @@ module Make (S : State.S) = struct
       add ((fun x -> {x with gmenu_pos = min 1 (x.gmenu_pos + 1)}), true)
     | MEnter -> add ((fun x -> match x.gmenu_pos with
         | 0 -> {x with state = Playing}
-        | 1 -> {x with state = MainMenu}
+        | 1 -> {x with state = Playing} (** TODO: exit to main *)
         | _ -> failwith "Invalid in-game menu position"
       ), false)
 
@@ -132,14 +121,8 @@ module Make (S : State.S) = struct
               action game
             else game
           else game
-        | `Mouse_button_down ->
-          if game.state <> MainMenu then game else
-            let click_coords = (Sdl.Event.(get event mouse_button_x), 
-                                Sdl.Event.(get event mouse_button_y)) in 
-            let menu = Menu.mouse_clicked game.menu click_coords in
-            { game with menu = menu }
         | `Quit ->
-          Sdl.log "Quit event handled";
+          Sdl.log "Quit event handled from game";
           Sdl.quit ();
           exit 0
         | _ -> game
@@ -148,7 +131,6 @@ module Make (S : State.S) = struct
   let rec loop (game:t) : unit =
     Audio.loop_music game.audio;
     let inputs = match game.state with 
-      | MainMenu -> Hashtbl.create 0
       | Playing -> game.game_inputs.event_driven
       | GameMenu -> game.menu_inputs
       | Gameover -> Hashtbl.create 0
@@ -160,9 +142,6 @@ module Make (S : State.S) = struct
     let game =
       if delta < 1000 / 60 then game else
         match game.state with
-        | MainMenu ->
-          let menu = Graphics.render_menu game.graphics game.menu in
-          {game with menu = menu}
         | Gameover -> game
         | GameoverHighscore -> game
         | Playing | GameMenu ->
@@ -194,14 +173,13 @@ module Make (S : State.S) = struct
     List.iter (menu_inputs_press menu_inputs) menu_controls;
     List.iter (game_inputs_press game_inputs) game_controls;
     loop {
-      state = MainMenu;
+      state = Playing;
       play_state = S.init 10 20 level;
       last_update = Int32.to_int (Sdl.get_ticks ());
       menu_inputs = menu_inputs;
       game_inputs = game_inputs;
       audio = audio;
       graphics = graphics;
-      menu = menu;
       gmenu_pos = 0;
       konami = 0;
     }

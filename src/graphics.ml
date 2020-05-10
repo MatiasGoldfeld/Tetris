@@ -199,14 +199,15 @@ let render_button_option ctx menu (x, y) (w, h) (label:string) selected = begin
   end
 end
 
-let render_buttons (ctx:t) (menu:Menu.t) (coords:int*int) : Menu.t = begin
-  let (x,y) = coords in
-  let x_offset = x/2 in
+let render_buttons (ctx:t) (menu:Menu.t) (coords:int*int) : Menu.t =
+  let (x, y) = coords in
+  let x_offset = x / 2 in
   let buttons = Menu.buttons menu in
-  let height = ref ((y+80)) in
+  let height = ref (y + 80) in
+  let menu_r = ref menu in 
   let updated_buttons = List.mapi (fun i (label, button) -> begin
-        let selected = Menu.button_selected menu label in
-        let updated_button_info = render_button_option ctx menu 
+        let selected = Menu.button_selected !menu_r label in
+        let updated_button_info = render_button_option ctx !menu_r 
             ((x+x_offset), !height) (20, 20) label selected in begin
           let updated_button = fst updated_button_info in begin
             height := !height + (snd updated_button_info);
@@ -215,12 +216,12 @@ let render_buttons (ctx:t) (menu:Menu.t) (coords:int*int) : Menu.t = begin
         end
       end ) buttons in begin
     Sdl.render_present ctx.renderer;
-    Menu.update_buttons menu updated_buttons;
-  end
-end
+    menu_r := Menu.update_buttons !menu_r updated_buttons;
+  end;
+  !menu_r
 
 
-let render_menu (ctx:t) (menu:Menu.t) = begin
+let render_menu (ctx:t) (menu:Menu.t) : Menu.t = begin
   set_color (178, 249, 255) ctx; 
   let (w,h) = Sdl.get_window_size ctx.window in
   let menu_w = w/2 in
@@ -230,7 +231,7 @@ let render_menu (ctx:t) (menu:Menu.t) = begin
   let rect = Sdl.Rect.create x y menu_w menu_h in
   fill_rect rect ctx;
   render_title ctx "DUCKTRIS" x y;
-  render_buttons ctx menu (x,y);
+  render_buttons ctx menu (x,y)
 end
 
 (** [menu_maker ctx items pos] renders a menu consisting of [items], where

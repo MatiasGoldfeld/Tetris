@@ -1,3 +1,5 @@
+open Tsdl
+
 type input_type = Button of string | Text of string
 
 type button = {
@@ -17,7 +19,15 @@ type t = {
   multiplayer_fields: (string*m_field) list;
   volume: float;
   level: int;
+  gfx: (t -> t);
+  last_update: int;
 }
+
+module type Button = sig
+  type t
+  val onPress : t -> t
+  val coords : t -> (int*int)
+end
 
 let init_empty_button b_type = {
   button_type = Button b_type;
@@ -31,20 +41,6 @@ let init_empty_text label =
       text = "";
       valid= false;
     })
-
-let init labels = 
-  let multiplayer_fields = 
-    [init_empty_text "Host"; init_empty_text "Address"] in
-  {
-    buttons = List.map 
-        (fun (label, b_type) -> 
-           (label, init_empty_button b_type)
-        )
-        labels;
-    multiplayer_fields= multiplayer_fields;
-    volume= 0.05;
-    level= 0
-  }
 
 let get_button menu label = List.assoc label menu.buttons
 
@@ -93,5 +89,43 @@ let mouse_clicked menu click_coords =
         menu.buttons 
   }
 
+(** [handle_events] handles all SDL events by using actions from [inputs] in
+    [game]. *)
+let rec handle_events (menu : t) : t =
+  let event = Sdl.Event.create () in
+  if not (Sdl.poll_event (Some event)) then menu
+  else handle_events begin
+      match Sdl.Event.(enum (get event typ)) with
+      | `Mouse_button_down ->
+        let click_coords = (Sdl.Event.(get event mouse_button_x), 
+                            Sdl.Event.(get event mouse_button_y)) in 
+        mouse_clicked menu click_coords
+      | `Quit ->
+        Sdl.log "Quit event handled from main menu";
+        Sdl.quit ();
+        exit 0
+      | _ -> menu
+    end
 
+let rec loop (menu : t) : unit =
+  let menu = handle_events menu in
+  let time = Int32.to_int (Sdl.get_ticks ()) in
+  let delta = (time - menu.last_update) in
+  let menu = if delta < 1000 / 60 then menu else
+      menu
+  in loop menu
 
+let init gfx labels = 
+  let mp_fields = [init_empty_text "Host"; init_empty_text "Address"] in
+  loop {
+    buttons = List.map 
+        (fun (label, b_type) -> 
+           (label, init_empty_button b_type)
+        )
+        labels;
+    multiplayer_fields = mp_fields;
+    volume = 0.05;
+    level = 0;
+    gfx = gfx;
+    last_update = Int32.to_int @@ Sdl.get_ticks ();
+  }
