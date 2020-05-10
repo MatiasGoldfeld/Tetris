@@ -14,66 +14,62 @@ type server_packet =
 module Client = struct
   module S = State.Local
 
-  type t = unit
+  type t = {
+    local : S.t ref;
+    remote : S.t list ref;
+  }
 
   exception Gameover of t
+
+  (** [new_state ()] is a new game state. *)
+  let new_state () = S.init 10 20 1
+
+  let create_client (name : string) (server : Lwt_unix.sockaddr) : t =
+    let local = ref (new_state ()) in
+    let remote = ref [] in
+    {
+      local = local;
+      remote = remote;
+    }
 
   let pauseable = false
 
   let init _ _ _ =
     failwith "Cannot init client state"
 
-  let score _ =
+  let update (server : t) (delta : int) (soft_drop : bool) : t Lwt.t =
     failwith "unimplemented"
 
-  let level _ =
-    failwith "unimplemented"
+  (** [return f client] is [client]'s local state applied to [f]. *)
+  let return (f : S.t -> 'a) (client : t) : 'a = f !(client.local)
 
-  let lines _ =
-    failwith "unimplemented"
+  (** [wrap f client] is [client] with [f] applied to the local player state. *)
+  let wrap (f : S.t -> S.t) (client : t) : t =
+    client.local := f !(client.local);
+    client
 
-  let field_width _ =
-    failwith "unimplemented"
-
-  let field_height _ =
-    failwith "unimplemented"
-
-  let value _ _ _ =
-    failwith "unimplemented"
-
-  let queue _ =
-    failwith "unimplemented"
-
-  let held _ =
-    failwith "unimplemented"
-
-  let update _ _ _ =
-    failwith "unimplemented"
-
-  let rotate _ _ =
-    failwith "unimplemented"
-
-  let move _ _ =
-    failwith "unimplemented"
-
-  let hold _ =
-    failwith "unimplemented"
-
-  let hard_drop _ =
-    failwith "unimplemented"
-
-  let handle_events _ _ =
-    failwith "unimplemented"
+  let score : t -> int = return S.score
+  let level : t -> int = return S.level
+  let lines : t -> int = return S.lines
+  let field_width : t -> int = return S.field_width
+  let field_height : t -> int = return S.field_height
+  let value : t -> int -> int -> State.v = return S.value
+  let queue : t -> Tetromino.t list = return S.queue
+  let held : t -> Tetromino.t option = return S.held
+  let rotate (rot : [`CCW | `CW]) : t -> t = wrap (S.rotate rot)
+  let move (dir : [`Left | `Right]) : t -> t = wrap (S.move dir)
+  let hold : t -> t = wrap S.hold
+  let hard_drop : t -> t = wrap S.hard_drop
+  let handle_events (f : State.event -> unit) : t -> t  =
+    wrap (S.handle_events f)
 end
 
 module Server = struct
   module S = State.Local
 
-  type io_pair = Lwt_io.input Lwt_io.channel * Lwt_io.output Lwt_io.channel
-  type accepted = (Lwt_unix.sockaddr * io_pair) list
-
   type connecting_status =
-    | Pending of unit Lwt.t * accepted ref
+    | Creating
+    | Pending of unit Lwt.t
     | Done
 
   type command_buffer = (Lwt_unix.sockaddr * client_command) list
@@ -82,107 +78,154 @@ module Server = struct
     status : connecting_status;
     sock : Lwt_unix.file_descr;
     buffer : command_buffer ref;
-    handlers : unit Lwt.t list;
-    server_state : S.t;
-    client_states : (Lwt_unix.sockaddr * S.t) list;
+    handlers : unit Lwt.t list ref;
+    local : S.t;
+    player_states : (Lwt_unix.sockaddr, S.t Lwt.t) Hashtbl.t;
+    out_channels : (Lwt_unix.sockaddr, Lwt_io.output Lwt_io.channel) Hashtbl.t;
   }
 
   exception Gameover of t
 
-  let start_client
+  (** [new_state ()] is a new game state. *)
+  let new_state () = S.init 10 20 1
+
+  (** [register_client server client] registers [client] in [server], spawning
+      a handler to handle incoming commands from the client. *)
+  let register_client
       (server : t)
-      (client : Lwt_unix.sockaddr)
-      (ic : Lwt_io.input Lwt_io.channel) : t =
-    let buffer = server.buffer in
+      (fd, addr : Lwt_unix.file_descr * Lwt_unix.sockaddr) : unit =
+    let ic = Lwt_io.of_fd Lwt_io.Input fd in
+    let oc = Lwt_io.of_fd Lwt_io.Output fd in
+    Hashtbl.add server.player_states addr (Lwt.return @@ new_state ());
+    Hashtbl.add server.out_channels addr oc;
     let rec handle () =
       let%lwt value = Lwt_io.read_value ic in
-      buffer := (client, value) :: !buffer;
+      server.buffer := (addr, value) :: !(server.buffer);
       handle ()
-    in { server with handlers = handle () :: server.handlers }
+    in server.handlers := handle () :: !(server.handlers)
 
+  (** [accept_clients server sock] is a thread that accepts incoming connectios
+      on [sock] and registers them in [server]. *)
+  let rec accept_clients
+      (server : t)
+      (sock : Lwt_unix.file_descr) () : unit Lwt.t =
+    let%lwt client = Lwt_unix.accept sock in
+    register_client server client;
+    if Hashtbl.length server.player_states < 4
+    then accept_clients server sock ()
+    else Lwt.return ()
+
+  (** [create_sock addr] is the hosting sock on [addr]. *)
   let create_sock (addr : Lwt_unix.sockaddr) : Lwt_unix.file_descr =
     let open Lwt_unix in
     let sock = socket PF_INET SOCK_STREAM 0 in
-    bind sock addr |> ignore;
+    Lwt.async (fun _ -> bind sock addr);
     listen sock 32;
     sock
 
-  let register_client
-      (clients : accepted ref)
-      (fd, addr : Lwt_unix.file_descr * Lwt_unix.sockaddr) : unit Lwt.t =
-    let ic = Lwt_io.of_fd Lwt_io.Input fd in
-    let oc = Lwt_io.of_fd Lwt_io.Output fd in
-    clients := (addr, (ic, oc)) :: !clients;
-    Lwt.return ()
-
-  let rec accept_clients
-      (clients : accepted ref)
-      (sock : Lwt_unix.file_descr) () : unit Lwt.t =
-    Lwt_unix.accept sock
-    >>= register_client clients
-    >>= if List.length !clients < 3
-    then accept_clients clients sock
-    else Lwt.return
-
-  let create_server (addr : Lwt_unix.sockaddr) : t =
-    let clients : accepted ref = ref [] in
+  (** [create_server name addr] is a server named [name] hosting on [addr]. *)
+  let create_server (name : string) (addr : Lwt_unix.sockaddr) : t =
     let sock = create_sock addr in
-    let acceptor = accept_clients clients sock () in
-    {
-      status = Pending (acceptor, clients);
+    let server = {
+      status = Creating;
       sock = sock;
       buffer = ref [];
-      handlers = [];
-      server_state = S.init 10 20 1;
-      client_states = [];
-    }
+      handlers = ref [];
+      local = new_state ();
+      player_states = Hashtbl.create 3;
+      out_channels = Hashtbl.create 3;
+    } in
+    let acceptor = accept_clients server sock () in
+    { server with status = Pending acceptor }
 
   (** [start server] is [server] with the game started and with it not accepting
       more clients.
       Requires: [server] is not already started. *)
   let start (server : t) : t =
     match server.status with
-    | Pending (acceptor, clients) ->
+    | Pending acceptor ->
       Lwt.cancel acceptor;
-      let f s (addr, (ic, oc)) = start_client s addr ic in
-      let server' = List.fold_left f server !clients in
-      { server' with status = Done }
-    | Done ->
-      failwith "Cannot start already started server"
+      { server with status = Done }
+    | Creating | Done ->
+      failwith "Cannot start non-pending server"
 
   let pauseable = false
 
   let init _ _ _ =
     failwith "Cannot init client state"
 
+  (** [handle_commands server commands] handles all buffered incoming client
+      [commands] in [server] *)
+  let rec handle_commands (server : t) (commands : command_buffer) : unit =
+    match commands with
+    | [] -> ()
+    | (addr, command) :: t ->
+      let state_prom =
+        let%lwt state = Hashtbl.find server.player_states addr in
+        Lwt.return @@ match command with
+        | Rotate rot -> S.rotate rot state
+        | Move dir -> S.move dir state
+        | Hold -> S.hold state
+        | HardDrop -> S.hard_drop state
+      in Hashtbl.replace server.player_states addr state_prom;
+      handle_commands server t
+
+  (** [send_states server addr] sends all the states in [server] to [addr]. *)
+  let send_states (server : t) (addr : Lwt_unix.sockaddr) : unit Lwt.t =
+    let%lwt client_state = Hashtbl.find server.player_states addr in
+    let seq_f (client, state) = if client = addr then None else Some state in
+    let%lwt other_states = Hashtbl.to_seq server.player_states
+                           |> Seq.filter_map seq_f
+                           |> List.of_seq
+                           |> Lwt.all
+    in
+    let oc = Hashtbl.find server.out_channels addr in
+    let packet = Packet (client_state, server.local :: other_states) in
+    Lwt_io.write_value oc packet
+
   let update (server : t) (delta : int) (soft_drop : bool) : t Lwt.t =
     let%lwt () = Lwt_main.yield () in
-    let update_fun state = S.update state delta false in
-    let all_states = server.server_state :: List.map snd server.client_states in
-    let server = match List.map update_fun all_states with
-      | server_state :: client_states -> server (* TODO *)
-      | _ -> failwith "Unexpected number of states in server update"
-    in failwith "unimplemented"
+    let commands = List.rev !(server.buffer) in
+    server.buffer := [];
+    handle_commands server commands;
+    let update_fun _ state_prom = Some begin
+        let%lwt state = state_prom in
+        S.update state delta false
+      end in
+    Hashtbl.filter_map_inplace update_fun server.player_states;
+    let%lwt local = S.update server.local delta false in
+    let server = { server with local = local } in
+    let%lwt () = Hashtbl.to_seq server.player_states
+                 |> Seq.map (fun (addr, _) -> send_states server addr)
+                 |> List.of_seq
+                 |> Lwt.join
+    in Lwt.return server
 
+  (** [return f server] is [server]'s local state applied to [f]. *)
+  let return (f : S.t -> 'a) (server : t) : 'a = f server.local
+
+  (** [wrap f server] is [server] with [f] applied to the local player state. *)
   let wrap (f : S.t -> S.t) (server : t) : t =
-    { server with server_state = f server.server_state }
+    { server with local = f server.local }
 
-  let score (server : t) : int = S.score server.server_state
-  let level (server : t) : int = S.level server.server_state
-  let lines (server : t) : int = S.lines server.server_state
-  let field_width (server : t) : int  = S.field_width server.server_state
-  let field_height (server : t) : int = S.field_height server.server_state
-  let value (server : t) : int -> int -> State.v = S.value server.server_state
-  let queue (server : t) : Tetromino.t list = S.queue server.server_state
-  let held (server : t) : Tetromino.t option = S.held server.server_state
-  let rotate  (rot : [`CCW | `CW]) (server : t) : t = wrap (S.rotate rot) server
-  let move (dir : [`Left | `Right]) (server : t) : t = wrap (S.move dir) server
+  let score : t -> int = return S.score
+  let level : t -> int = return S.level
+  let lines : t -> int = return S.lines
+  let field_width : t -> int  = return S.field_width
+  let field_height : t -> int = return S.field_height
+  let value : t -> int -> int -> State.v = return S.value
+  let queue : t -> Tetromino.t list = return S.queue
+  let held : t -> Tetromino.t option = return S.held
+  let rotate  (rot : [`CCW | `CW]) : t -> t = wrap (S.rotate rot)
+  let move (dir : [`Left | `Right]) : t -> t = wrap (S.move dir)
   let hold : t -> t = wrap S.hold
   let hard_drop : t -> t = wrap S.hard_drop
-  let handle_events (f : State.event -> unit) = wrap (S.handle_events f)
+  let handle_events (f : State.event -> unit) : t -> t =
+    wrap (S.handle_events f)
 end
 
-let create_client (addr : Lwt_unix.sockaddr) : Client.t =
-  ()
+let create_client : string -> Lwt_unix.sockaddr -> Client.t =
+  Client.create_client
 
-let create_server : Lwt_unix.sockaddr -> Server.t = Server.create_server
+let create_server : string -> Lwt_unix.sockaddr -> Server.t =
+  Server.create_server
