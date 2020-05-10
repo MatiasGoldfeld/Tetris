@@ -180,20 +180,26 @@ end
 (** The module that is equivalent to a Menu_state. *)
 module M = Menu_state
 
-let render_fields (ctx:t) (menu:M.t) fields coords dimensions = begin
+let render_fields (ctx:t) (menu:M.t) coords dimensions = begin
   set_color (255, 255, 255) ctx; 
   let (x,y) = coords in
   let (w,h) = dimensions in
   let rect = Sdl.Rect.create x y w h in begin
     Sdl.set_text_input_rect (Some rect);
     fill_rect rect ctx;
+    let address = Menu_state.address menu in 
+    if address <> "" then begin
+      let bg = Sdl.Color.create 100 100 100 255 in
+      let fg = Sdl.Color.create 200 200 200 255 in
+      draw_text ctx 18 address bg fg (x,y)
+    end;
     Sdl.start_text_input();
   end
 end
 
 let render_action_button ctx menu (x, y) (w, h) (label:string) selected = begin
   let border_color = (68,53,91) in
-  let button_color = (255,255,255) in
+  let button_color = (68,53,91) in
   render_button ctx x y w h 2 border_color button_color selected;
   let bg = Sdl.Color.create 100 100 100 255 in
   let fg = Sdl.Color.create 200 200 200 255 in
@@ -208,15 +214,22 @@ let render_checkbox_button ctx menu (x, y) (w, h) (label:string) selected = begi
   let bg = Sdl.Color.create 100 100 100 255 in
   let fg = Sdl.Color.create 200 200 200 255 in
   draw_text ctx 18 label bg fg (x+(w*2),(y-9));
-  if label = "Multiplayer" && Menu_state.is_multiplayer menu then begin
-    draw_text ctx 16 "X" bg fg (x,y);
-    let fields = M.multiplayer_fields menu in
-    render_fields ctx menu fields (x,y+30) (200,h);
-    (M.get_button menu label |> M.update_button (x,y) (w,h), 80)
+  if Menu_state.is_multiplayer menu then begin
+    if label = "Multiplayer" then begin
+      draw_text ctx 16 "X" bg fg (x,y);
+      (M.get_button menu label |> M.update_button (x,y) (w,h), 30)
+    end
+    else if label = "Host game?"  then begin
+      if Menu_state.is_host menu then
+        draw_text ctx 16 "X" bg fg (x,y);
+      render_fields ctx menu (x,y+30) (200,h);
+      (M.get_button menu label |> M.update_button (x,y) (w,h), 80)
+    end
+    else 
+      (M.get_button menu label |> M.update_button (x,y) (w,h), 80)
   end
-  else begin
+  else
     (M.get_button menu label |> M.update_button (x,y) (w,h), 30)
-  end
 end
 
 let rendered_button ctx button height (x,y) menu_r label= 
@@ -229,7 +242,7 @@ let rendered_button ctx button height (x,y) menu_r label=
     | "action" ->
       let selected = M.button_selected !menu_r label in
       render_action_button ctx !menu_r 
-        (x, !height) (100, 40) label selected
+        (x, !height) (300, 40) label selected
     | _ -> failwith "Invalid button string type"
   end in
   let updated_button = fst updated_button_info in 

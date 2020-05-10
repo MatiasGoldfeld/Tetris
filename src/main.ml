@@ -32,6 +32,11 @@ let main () =
     Menu.init audio graphics
       [("Multiplayer", "checkbox", 
         (fun m -> Menu_state.toggle_multiplayer m )); 
+       ("Host game?", "checkbox", (fun m -> Menu_state.toggle_host m));
+       ("Increase Volume (by 10%)", "action", 
+        (fun m -> Menu_state.adjust_music m 0.1));
+       ("Decrease Volume (by 10%)", "action",
+        (fun m -> Menu_state.adjust_music m (-0.1)));
        ("Start", "action", (fun m -> print_endline "start"; 
                              Menu_state.set_start_game m true))];
     Sdl.quit ();
