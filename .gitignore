@@ -29,5 +29,5 @@ setup.log
 _opam/
 
 # Docs
-docs.public/
-docs.private/
+doc.public/
+doc.private/

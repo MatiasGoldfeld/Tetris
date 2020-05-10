@@ -1,57 +1,70 @@
-type button = {
-  coords: (int*int);
-  dimensions: (int*int);
-  selected: bool;
-}
+open Tsdl
 
 type t = {
-  multiplayer: bool;
-  buttons: (string*button) list;
-  volume: float;
-  level: int;
+  menu : Menu_state.t;
+  audio : Audio.t;
+  graphics : Graphics.t;
+  last_update : int;
 }
 
-let init_empty_button () = {
-  coords= (0,0);
-  dimensions = (0,0);
-  selected= false;
-}
+module type Button = sig
+  type t
+  val onPress : t -> t
+  val coords : t -> (int*int)
+end
 
-let init () = {
-  multiplayer= false;
-  buttons= [];
-  volume= 0.05;
-  level= 0
-}
+let menu_controls = [
+  (Sdl.K.escape, Game.MMenu);
+  (Sdl.K.left,   Game.MLeft);
+  (Sdl.K.right,  Game.MRight);
+  (Sdl.K.up,     Game.MUp);
+  (Sdl.K.down,   Game.MDown);
+  (Sdl.K.return, Game.MEnter);
+]
 
-let make_button 
-    (coords:int*int) (dimensions:int*int) =
-  {
-    coords = coords;
-    dimensions = dimensions;
-    selected = false;
+let game_controls = [
+  (Sdl.K.escape, Game.GMenu);
+  (Sdl.K.left,   Game.GLeft);
+  (Sdl.K.right,  Game.GRight);
+  (Sdl.K.up,     Game.GCW);
+  (Sdl.K.z,      Game.GCCW);
+  (Sdl.K.x,      Game.GCW);
+  (Sdl.K.down,   Game.GSoft);
+  (Sdl.K.space,  Game.GHard);
+  (Sdl.K.c,      Game.GHold);
+]
+
+(** [handle_events] handles all SDL events by using actions from [inputs] in
+    [game]. *)
+let rec handle_events (menu : t) : t =
+  let event = Sdl.Event.create () in
+  if not (Sdl.poll_event (Some event)) then menu
+  else handle_events begin
+      match Sdl.Event.(enum (get event typ)) with
+      | `Mouse_button_down ->
+        let click_coords = (Sdl.Event.(get event mouse_button_x), 
+                            Sdl.Event.(get event mouse_button_y)) in 
+        { menu with menu = Menu_state.mouse_clicked menu.menu click_coords }
+      | `Quit ->
+        Sdl.log "Quit event handled from main menu";
+        Sdl.quit ();
+        exit 0
+      | _ -> menu
+    end
+
+(** [loop menu] is unit with byproduct of running the menu loop. *)
+let rec loop (menu : t) : unit =
+  let menu = handle_events menu in
+  let time = Int32.to_int (Sdl.get_ticks ()) in
+  let delta = (time - menu.last_update) in
+  let menu = if delta < 1000 / 60 then menu else
+      {menu with menu = Graphics.render_menu menu.graphics menu.menu}
+  in loop menu
+
+let init audio graphics labels = 
+  loop {
+    menu = Menu_state.init labels;
+    audio = audio;
+    graphics = graphics;
+    last_update = Int32.to_int @@ Sdl.get_ticks ();
   }
-
-let set_multiplayer_buttons (menu:t) (buttons:(string*button) list) =
-  {menu with buttons = buttons}
-
-let in_button button click_coords : bool = 
-  let (button_x, button_y) = button.coords in
-  let (click_x, click_y) = click_coords in
-  let in_x_range = button_x <= click_x 
-                   && button_x+(fst button.dimensions) >= click_x in
-  let in_y_range = button_y <= click_y 
-                   && button_y+(snd button.dimensions) >= click_y in
-  in_x_range && in_y_range
-
-let mouse_clicked menu click_coords =
-  { menu with buttons = List.map (fun (label, button) -> 
-        if in_button button click_coords then begin
-          (label, {button with selected= not button.selected})
-        end
-        else (label, button))
-        menu.buttons 
-  }
-
-
-

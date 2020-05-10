@@ -1,16 +1,7 @@
+(** A representation of the menu *)
 type t
 
-(** The representation of the buttons on the menu *)
-type button
-
-val init : unit -> t
-
-val set_multiplayer_buttons : t -> (string*button) list -> t
-
-val make_button : int*int -> int*int -> button
-
-val mouse_clicked : t -> (int*int) -> t
-
-
-
-
+(** [init audio graphics button_labels] initializes a menu with buttons that
+    have labels [button_labels] and displays it using [graphics] with audio
+    coming from [audio]. *)
+val init : Audio.t -> Graphics.t -> (string * string) list -> unit

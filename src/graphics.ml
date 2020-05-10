@@ -5,12 +5,11 @@ open Tsdl_image
 type color = int * int * int
 type duck_image = (color * Tsdl.Sdl.texture)
 
-
 type t = {
   window : Sdl.window;
   renderer : Sdl.renderer;
   pixel_format : Sdl.pixel_format;
-  duck_mode: bool;
+  duck_mode : bool;
   duck_images : duck_image list;
   bg_color : color;
   font : Ttf.font;
@@ -42,6 +41,8 @@ let render_duck_image (ctx:t) (rect:Sdl.rect) (texture:Tsdl.Sdl.texture) =
 let fill_rect (rect:Sdl.rect) (ctx:t) : unit = 
   Sdl.render_fill_rect ctx.renderer (Some rect) |> ignore
 
+(** [render_spare rect ctx ?a color] is unit with the byproduct of rendering
+    [rect] in [ctx] with the color or duck associated with [color]. *)
 let render_square (rect:Sdl.rect) (ctx:t) ?(a:int=255) (color:color) : unit =
   if ctx.duck_mode then
     let texture = (List.assoc color ctx.duck_images)
@@ -56,6 +57,7 @@ let render_square (rect:Sdl.rect) (ctx:t) ?(a:int=255) (color:color) : unit =
 let fill_coords (x:int) (y:int) (w:int) (h:int) (ctx:t) : unit = 
   let rect = Sdl.Rect.create x y w h in fill_rect rect ctx
 
+(** [create_duck_texture renderer] is the texture of the duck from [renderer]. *)
 let create_duck_texture (renderer:Sdl.renderer) 
     (image_path:string) : Tsdl.Sdl.texture= 
   let surface = (Tsdl_image.Image.load image_path) 
@@ -63,6 +65,8 @@ let create_duck_texture (renderer:Sdl.renderer)
   Sdl.create_texture_from_surface renderer surface 
   |> unpack "failed to make texture"
 
+(** [duck_path_dict path renderer colors count] is the list of duck images
+    from [path] associated with the colors in [colors]. *)
 let rec duck_path_dict
     (path: string)
     (renderer: Sdl.renderer)
@@ -74,6 +78,7 @@ let rec duck_path_dict
                    |> create_duck_texture renderer) in
     (h,texture)::(duck_path_dict path renderer t (count+1))
   | [] -> []
+
 
 let init (duck_mode:bool) (path:string) : t =
   Sdl.init_sub_system Sdl.Init.video |> unpack "Graphics init error";
@@ -137,6 +142,8 @@ let draw_text (ctx:t) (size:int) (text:string) (fg:Sdl.color) (bg:Sdl.color)
   Sdl.free_surface surf;
   Sdl.destroy_texture texture
 
+(** [render_title ctx title x y] is unit with byproduct of rendering the title
+    [title] with [ctx] positioned according to [x] and [y]. *)
 let render_title (ctx:t) (title: string) (x:int) (y:int) = begin
   let bg = Sdl.Color.create 100 100 100 0 in
   let fg = Sdl.Color.create 200 200 200 0 in
@@ -156,24 +163,77 @@ let render_title (ctx:t) (title: string) (x:int) (y:int) = begin
   draw_text ctx size text fg bg (x+x_offset, y);
 end
 
-let render_button (ctx:t) x y w h (border:int) = begin
+(** [render_button ctx x y w h border selected] is unit with byproduct of 
+    rendering a button with [ctx] according to the parameters [x], [y], [w], and 
+    [h], with border [border] and state [selected]. *)
+let render_button (ctx:t) x y w h (border:int) selected = begin
   set_color (0, 0, 0) ctx; 
   let outline = Sdl.Rect.create (x-(border)/2) (y-(border)/2) (w+border) (h+border) in
   fill_rect outline ctx;
   set_color (255, 255, 255) ctx; 
+  let bg = Sdl.Color.create 100 100 100 0 in
+  let fg = Sdl.Color.create 200 200 200 0 in
   let rect = Sdl.Rect.create x y w h in
   fill_rect rect ctx;
+  if selected then draw_text ctx 16 "X" bg fg (x,y);
 end
 
-let render_button_option ctx (x, y) (w, h) (label:string) : (string * Menu.button) = begin
-  render_button ctx x y w h 2;
+module M = Menu_state
+
+let render_fields (ctx:t) (menu:M.t) fields coords dimensions = begin
+  set_color (255, 255, 255) ctx; 
+  let (x,y) = coords in
+  let (w,h) = dimensions in
+  List.iteri (fun i field -> 
+      let rect = Sdl.Rect.create x (y+30*i) w h in begin
+        Sdl.set_text_input_rect (Some rect);
+        fill_rect rect ctx;
+        Sdl.start_text_input();
+      end
+    ) fields;
+  30 * (List.length fields);
+end
+
+
+let render_button_option ctx menu (x, y) (w, h) (label:string) selected = begin
+  render_button ctx x y w h 2 selected;
   let bg = Sdl.Color.create 100 100 100 0 in
   let fg = Sdl.Color.create 200 200 200 0 in
   draw_text ctx 18 label bg fg (x+(w*2),(y-9));
-  (label, Menu.make_button (x,y) (w,h));
+  if label = "Multiplayer" && selected then begin
+    let fields = M.multiplayer_fields menu in
+    let height_dif = render_fields ctx menu fields (x,y+30) (200,h) in begin
+      (M.get_button menu label |> M.update_button (x,y) (w,h), 
+       60 + height_dif)
+    end
+  end
+  else begin
+    (M.get_button menu label |> M.update_button (x,y) (w,h), 30)
+  end
 end
 
-let render_menu (ctx:t) (menu:Menu.t) = begin
+let render_buttons (ctx:t) (menu:M.t) (coords:int*int) : M.t =
+  let (x, y) = coords in
+  let x_offset = x / 2 in
+  let buttons = M.buttons menu in
+  let height = ref (y + 80) in
+  let menu_r = ref menu in 
+  let updated_buttons = List.mapi (fun i (label, button) -> begin
+        let selected = M.button_selected !menu_r label in
+        let updated_button_info = render_button_option ctx !menu_r 
+            ((x+x_offset), !height) (20, 20) label selected in begin
+          let updated_button = fst updated_button_info in begin
+            height := !height + (snd updated_button_info);
+            (label, updated_button)
+          end
+        end
+      end ) buttons in begin
+    Sdl.render_present ctx.renderer;
+    menu_r := M.update_buttons !menu_r updated_buttons;
+  end;
+  !menu_r
+
+let render_menu (ctx:t) (menu:M.t) : M.t = begin
   set_color (178, 249, 255) ctx; 
   let (w,h) = Sdl.get_window_size ctx.window in
   let menu_w = w/2 in
@@ -183,12 +243,7 @@ let render_menu (ctx:t) (menu:Menu.t) = begin
   let rect = Sdl.Rect.create x y menu_w menu_h in
   fill_rect rect ctx;
   render_title ctx "DUCKTRIS" x y;
-  let x_offset = x/2 in
-  let button = render_button_option ctx ((x+x_offset), ((3*y)/2)) 
-      (10, 10) "Multiplayer" in begin
-    Sdl.render_present ctx.renderer;
-    [button];
-  end
+  render_buttons ctx menu (x,y)
 end
 
 (** [menu_maker ctx items pos] renders a menu consisting of [items], where
@@ -313,6 +368,7 @@ module MakeGameRenderer (S : State.S) = struct
     draw_text ctx size t_lines fg bg (x + x_offset, y + y_offset + size * 4);
     draw_text ctx size t_level fg bg (x + x_offset, y + y_offset + size * 6)
 
+
   let render (ctx:t) (states:S.t list) (menu:(string * bool) list) : unit =
     let state = List.hd states in
     let w_desire, h_desire = 24, 20 in
@@ -323,18 +379,10 @@ module MakeGameRenderer (S : State.S) = struct
     let field_width = S.field_width state * size in
     set_color ctx.bg_color ctx;
     Sdl.render_clear ctx.renderer |> unpack "Failed to clear renderer";
-    let start = Sdl.get_ticks () in (* temp *)
     draw_game_info ctx state size (x_offset, y_offset);
-    let time_game = Sdl.get_ticks () in (* temp *)
     draw_playfield ctx state (x_offset + 8 * size, y_offset) size;
-    let time_field = Sdl.get_ticks () in (* temp *)
     draw_queue ctx state size 5 (x_offset + field_width + 8 * size, y_offset);
-    let time_queue = Sdl.get_ticks () in (* temp *)
     if menu = [] then () else
       menu_maker ctx menu (x_offset + size * 13, y_offset + size * 10) size;
     Sdl.render_present ctx.renderer;
-    (* The start variable and the following are temp perf testing code *)
-    (* Printf.printf "Render time: %li, %li, %li"
-       (Int32.sub time_game start) (Int32.sub time_field time_game) (Int32.sub time_queue time_field);
-       print_newline () *)
 end

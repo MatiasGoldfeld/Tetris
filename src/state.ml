@@ -1,7 +1,9 @@
 type event = 
   | Rotate 
-  | Drop
   | Locking
+  | Movement
+  | LineClear
+  | EndGame
 
 type color = int * int * int
 
@@ -16,9 +18,6 @@ type v =
 module type S = sig
   type t
   exception Gameover of t
-  val make_test_state : int -> int -> int -> int-> int -> int -> int -> int ->
-    event list -> Tetromino.t list -> Tetromino.t option -> bool -> Tetromino.t 
-    -> int -> int * int -> int -> color option array array -> t
   val pauseable : bool
   val init : int -> int -> int -> t
   val score : t -> int
@@ -37,7 +36,7 @@ module type S = sig
   val handle_events : (event -> unit) -> t -> t
 end
 
-module Local : S = struct
+module Local = struct
   (* the [i]th element in score_multipliers corresponds to the points 
      rewarded for clearing i lines *)
   let score_multipliers = [|0;100; 300; 500; 800|]
@@ -68,39 +67,19 @@ module Local : S = struct
 
   exception Gameover of t
 
-  let make_test_state scoret linest levelt fall_speedt step_deltat 
-      ext_placement_move_countt ext_placement_deltat min_rowt eventst queuet 
-      heldt held_beforet fallingt falling_rott falling_post ghost_rowt 
-      playfieldt = 
-    {
-      score = scoret;
-      lines = linest;
-      level = levelt;
-      fall_speed = fall_speedt;
-      step_delta = step_deltat;
-      ext_placement_move_count = ext_placement_move_countt;
-      ext_placement_delta = ext_placement_deltat;
-      min_row = min_rowt;
-      events = eventst;
-      queue = queuet;
-      held = heldt;
-      held_before = held_beforet;
-      falling = fallingt;
-      falling_rot = falling_rott;
-      falling_pos = falling_post;
-      ghost_row = ghost_rowt;
-      playfield = playfieldt
-    }
-
-
 
   let pauseable = true
 
   let field_width (state:t) : int =
     Array.length state.playfield.(0)
 
-  let field_height (state:t) : int =
+  (** [field_state_height state] is the actual height of the playfeild in 
+      [state] *)
+  let field_state_height (state : t) : int =
     Array.length state.playfield
+
+  let field_height (state:t) : int =
+    field_state_height state / 2
 
   let score (state:t) : int =
     state.score
@@ -122,7 +101,7 @@ module Local : S = struct
           let abs_col = fst falling_pos + col in
           let abs_row = snd falling_pos + row in
           abs_col >= 0 && abs_col < field_width state &&
-          abs_row >= 0 && abs_row < field_height state &&
+          abs_row >= 0 && abs_row < (field_state_height state) &&
           state.playfield.(abs_row).(abs_col) = None
       end && check_row (col + 1) row
     in
@@ -164,28 +143,35 @@ module Local : S = struct
       else { state with ghost_row = row - 1 }
     in helper (start_row + 1)
 
-
+  (** [drop_help state] is [state] with a new piece initialized as the 
+      falling piece on the top of the playfield.
+      Raises: Gameover if no piece can be initialized at the top. *)
   let drop_help state =
     let column = 5 - (Tetromino.size state.falling / 2) in
-    if legal state state.falling state.falling_rot (column, 0)
-    then {state with 
-          step_delta = 0;
-          falling_pos = (column, 0);
-          ext_placement_move_count = 0;
-          ext_placement_delta = 0;
-          min_row = 0} |> update_ghost
+    let row = field_height state in
+    if legal state state.falling state.falling_rot (column, row)
+    then
+      {state with 
+       step_delta = 0;
+       falling_pos = (column, row);
+       ext_placement_move_count = 0;
+       ext_placement_delta = 0;
+       min_row = row} |> update_ghost
     else begin
-      if legal state state.falling state.falling_rot (column, -1)
-      then {state with 
-            step_delta = 0;
-            falling_pos = (column, -1);
-            ext_placement_move_count = 0; 
-            ext_placement_delta = 0;
-            min_row = -1} |> update_ghost
-      else raise (Gameover state)
+      if legal state state.falling state.falling_rot (column, row - 1)
+      then begin 
+        {state with 
+         step_delta = 0;
+         falling_pos = (column, row - 1);
+         ext_placement_move_count = 0; 
+         ext_placement_delta = 0;
+         min_row = row - 1} |> update_ghost
+      end
+      else 
+        raise (Gameover {state with events = EndGame::state.events})
     end
 
-  (** [drop piece state] is the [state] with a new piece initialized as the 
+  (** [drop state] is [state] with a new piece initialized as the 
       falling piece on the top of the playfield. *)
   let drop (state:t) : t = 
     let new_state = next_piece state in
@@ -222,21 +208,23 @@ module Local : S = struct
       falling_rot = -1;
       falling_pos = -1, -1;
       ghost_row = -1;
-      playfield = Array.make_matrix height width None
+      playfield = Array.make_matrix (2*height) width None
     }
     |> drop
     |> recalculate_fall_speed
 
+  (** [row_full acc item] is true is [acc] is true and [item] is not None.*)
   let row_full acc item =
     match item with
     | Some x -> true && acc
     | None -> false && acc
 
+  (** [check_row array] is true if [array] is full, false otherwise. *)
   let check_row array =
     Array.fold_left row_full true array
 
-  (* Note: Could not use Array.map becaus we only want to do this for a part
-     of the array. *)
+  (** [fill_in_rows state height] is unit with the byproduct of moving
+      all above rows down a row. *)
   let rec fill_in_rows state height =
     if height >= 1
     then (state.playfield.(height) <- state.playfield.(height - 1);
@@ -246,28 +234,34 @@ module Local : S = struct
           fill_in_rows state (height - 1))
     else state.playfield.(height) <- Array.make (field_width state) None
 
-  let rec clear_lines_helper state height score_dif =
-    if height >= 0 then begin
+  (** [clear_lines_helper state height line_dif] is the state after clearing
+      any full lines in [state] and awarding points accordingly. *)  
+  let rec clear_lines_helper state height line_dif =
+    if height >= field_height state then begin
       if (check_row state.playfield.(height))
       then
         (fill_in_rows state height;
          let new_state = recalculate_fall_speed
-             { state with lines = state.lines + 1;
-                          level = max state.level (1 + (state.lines + 1) / 10) }
-         in clear_lines_helper new_state height (score_dif+1))
-      else clear_lines_helper state (height - 1) (score_dif)
+             {state with lines = state.lines + 1;
+                         level = max state.level (1 + (state.lines + 1) / 10)}
+         in clear_lines_helper new_state height (line_dif+1))
+      else clear_lines_helper state (height - 1) (line_dif)
     end
     else
-      let new_score = state.score + state.level*score_multipliers.(score_dif) in
-      { state with score = new_score}
+      let new_score = state.score + state.level*score_multipliers.(line_dif) in
+      if line_dif > 0 
+      then {state with score = new_score; events = LineClear::state.events} 
+      else {state with score = new_score}
 
+  (** [clear_lines state] is the state after clearing
+        any full lines in [state] and awarding points accordingly. *)
   let clear_lines state = 
-    clear_lines_helper state (field_height state - 1) 0
+    clear_lines_helper state (field_state_height state - 1) 0
 
   let value (state:t) (c:int) (r:int) : v =
     if r < 0 || c < 0 || r >= field_height state || c >= field_width state
     then Empty
-    else match state.playfield.(r).(c) with
+    else match state.playfield.(r + field_height state).(c) with
       | Some color -> Static color
       | None ->
         let tet = state.falling in
@@ -275,12 +269,12 @@ module Local : S = struct
         let fall_rot = state.falling_rot in
         if c >= fall_c && c - fall_c < Tetromino.size state.falling then
           let check = Tetromino.value tet fall_rot (c - fall_c) in
-          match check (r - fall_r) with
+          match check (r - fall_r + field_height state) with
           | Some color ->
             let a = (500 - state.ext_placement_delta) * 255 / 500 in
             Falling (color, a)
           | None ->
-            match check (r - state.ghost_row) with
+            match check (r - state.ghost_row + field_height state) with
             | Some color -> Ghost (color, 95)
             | None -> Empty
         else
@@ -304,6 +298,8 @@ module Local : S = struct
       | _ -> false
     end
 
+  (** [place_piece state pos_x pos_y] is the state after placing the falling 
+      piece in [state] in the positino of [pos_x] and [pos_y]. *)
   let place_piece state pos_x pos_y =
     let spin_score_state =
       if is_mini_t_spin state pos_x pos_y then 
@@ -319,7 +315,8 @@ module Local : S = struct
         else ()
       done
     done;
-    drop (clear_lines spin_score_state)
+    let new_state = {spin_score_state with events = Locking::state.events} in
+    drop (clear_lines new_state)
 
   let queue (state:t) : Tetromino.t list =
     state.queue
@@ -358,6 +355,8 @@ module Local : S = struct
     end
     else state
 
+  (** [ext_placement_add state] is the state after updating the extended 
+      placement record fields in [state] by one move. *)
   let ext_placement_add state = 
     let move_count_add =
       if snd state.falling_pos = state.ghost_row then 1 else 0 in
@@ -386,7 +385,8 @@ module Local : S = struct
           (x + fst state.falling_pos, y + snd state.falling_pos) in
         if legal state state.falling new_rot check_pos then
           let ext_state = ext_placement_add state in
-          { ext_state with falling_rot = new_rot; falling_pos = check_pos}
+          { ext_state with falling_rot = new_rot; falling_pos = check_pos;
+                           events = Rotate::state.events}
           |> update_ghost
         else test_rot t
     in test_rot (Tetromino.wall_kicks state.falling rot rotation)
@@ -398,11 +398,14 @@ module Local : S = struct
     in 
     if legal state state.falling state.falling_rot new_pos then 
       let ext_state = ext_placement_add state in
-      { ext_state with falling_pos = new_pos }
+      { ext_state with falling_pos = new_pos; events = Movement::state.events}
       |> update_ghost
     else state
 
-  (** Comment up!*)
+
+  (** [hold_drop state piece] is [state] with a piece initialized as the falling
+      piece at the top of the grid.
+  *)
   let hold_drop state piece =
     let new_state = {state with falling = piece; falling_rot = 0} in
     drop_help new_state
@@ -427,4 +430,31 @@ module Local : S = struct
   let handle_events (f:event -> unit) (state:t) : t =
     List.iter f (List.rev state.events);
     { state with events = [] }
+
 end
+
+
+let make_test_state scoret linest levelt fall_speedt step_deltat 
+    ext_placement_move_countt ext_placement_deltat min_rowt eventst queuet 
+    heldt held_beforet fallingt falling_rott falling_post ghost_rowt 
+    playfieldt : Local.t = 
+  {
+    score = scoret;
+    lines = linest;
+    level = levelt;
+    fall_speed = fall_speedt;
+    step_delta = step_deltat;
+    ext_placement_move_count = ext_placement_move_countt;
+    ext_placement_delta = ext_placement_deltat;
+    min_row = min_rowt;
+    events = eventst;
+    queue = queuet;
+    held = heldt;
+    held_before = held_beforet;
+    falling = fallingt;
+    falling_rot = falling_rott;
+    falling_pos = falling_post;
+    ghost_row = ghost_rowt;
+    playfield = playfieldt
+  }
+

@@ -1,5 +1,5 @@
-MODULES=audio game graphics main menu state test tetromino remote
-PKGS=tsdl, tsdl_mixer, tsdl_ttf, tsdl_image, lwt, lwt.unix, lwt_ppx
+MODULES=audio game graphics main menu state tetromino menu_state remote
+PKGS=oUnit,tsdl,tsdl_mixer,tsdl_ttf,tsdl_image,lwt,lwt.unix,lwt_ppx
 SRC=src/
 PATHS=$(addprefix $(SRC), $(MODULES))
 OBJECTS=$(PATHS:=.cmo)
@@ -25,12 +25,12 @@ docs: docs-public docs-private
 	
 docs-public: build
 	mkdir -p doc.public
-	ocamlfind ocamldoc -I _build -package $(PKGS) \
+	ocamlfind ocamldoc -I _build/src -package $(PKGS) \
 		-html -stars -d doc.public $(MLIS)
 
 docs-private: build
 	mkdir -p doc.private
-	ocamlfind ocamldoc -I _build -package $(PKGS) \
+	ocamlfind ocamldoc -I _build/src -package $(PKGS) \
 		-html -stars -d doc.private \
 		-inv-merge-ml-mli -m A $(MLIS) $(MLS)
 

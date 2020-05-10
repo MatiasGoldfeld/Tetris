@@ -19,25 +19,19 @@ type game_input =
   | GHold
 
 type game_state =
-  | MainMenu
   | Playing
   | GameMenu
   | Gameover
   | GameoverHighscore
 
-module type Button = sig
-  type t
-  val onPress : t -> t
-  val coords : t -> (int*int)
-end
-
 module type S = sig
   type t
-  val init : int -> (Sdl.keycode * menu_input) list ->
-    (Sdl.keycode * game_input) list -> Audio.t -> Graphics.t -> Menu.t -> unit
+  val init : Audio.t -> Graphics.t -> int -> (Sdl.keycode * menu_input) list ->
+    (Sdl.keycode * game_input) list -> unit
 end
 
 module Make (S : State.S) = struct
+  (** A module that makes a game render according to the S from Make. *)
   module GR = Graphics.MakeGameRenderer (S)
 
   type inputs_t = (Sdl.keycode, (t -> t) * bool) Hashtbl.t
@@ -55,9 +49,9 @@ module Make (S : State.S) = struct
     game_inputs : game_inputs_t;
     audio : Audio.t;
     graphics : Graphics.t;
-    menu : Menu.t;
     gmenu_pos : int;
     konami : int;
+    quit : bool;
   }
 
   (** [menu_inputs_press inputs (k, i)] maps key [k] to
@@ -75,8 +69,8 @@ module Make (S : State.S) = struct
     | MDown  ->
       add ((fun x -> {x with gmenu_pos = min 1 (x.gmenu_pos + 1)}), true)
     | MEnter -> add ((fun x -> match x.gmenu_pos with
-        | 0 -> {x with state = Playing}
-        | 1 -> {x with state = MainMenu}
+        | 0 -> { x with state = Playing }
+        | 1 -> { x with quit = true }
         | _ -> failwith "Invalid in-game menu position"
       ), false)
 
@@ -97,6 +91,10 @@ module Make (S : State.S) = struct
     | GHard  -> add (state_fun (S.hard_drop), false)
     | GHold  -> add (state_fun (S.hold), false)
 
+
+  (** [konami_code key game] is the [game] updated with the state of the konami
+      code. If the konami code is entered, [konami_code] is the game with duck
+      mode toggled opposite to what it was. *)
   let konami_code (key:Sdl.keycode) (game:t) : t =
     let code = [
       Sdl.K.up; Sdl.K.up;
@@ -129,26 +127,24 @@ module Make (S : State.S) = struct
               action game
             else game
           else game
-        | `Mouse_button_down ->
-          if game.state <> MainMenu then game else
-            let click_coords = (Sdl.Event.(get event mouse_button_x), 
-                                Sdl.Event.(get event mouse_button_x)) in 
-            let menu = Menu.mouse_clicked game.menu click_coords in
-            { game with menu = menu }
         | `Quit ->
-          Sdl.log "Quit event handled";
+          Sdl.log "Quit event handled from game";
           Sdl.quit ();
           exit 0
         | _ -> game
       end
 
+  (** [loop game] is unit with the side effect of running a game loop for the
+      game. *)
   let rec loop (game:t) : unit =
     Audio.loop_music game.audio;
     let inputs = match game.state with 
-      | MainMenu -> Hashtbl.create 0
       | Playing -> game.game_inputs.event_driven
       | GameMenu -> game.menu_inputs
-      | Gameover -> Hashtbl.create 0
+      | Gameover ->
+        let tbl = Hashtbl.create 1 in
+        Hashtbl.add tbl Sdl.K.escape ((fun g -> { g with quit = true }), false);
+        tbl
       | GameoverHighscore -> Hashtbl.create 0
     in
     let game = handle_events inputs game in
@@ -157,10 +153,6 @@ module Make (S : State.S) = struct
     let game =
       if delta < 1000 / 60 then game else
         match game.state with
-        | MainMenu ->
-          let menu = let buttons = Graphics.render_menu game.graphics game.menu in
-            Menu.set_multiplayer_buttons game.menu buttons in
-          {game with menu = menu}
         | Gameover -> game
         | GameoverHighscore -> game
         | Playing | GameMenu ->
@@ -176,12 +168,11 @@ module Make (S : State.S) = struct
               [("Resume", game.gmenu_pos = 0); ("Quit", game.gmenu_pos = 1)] in
           GR.render game.graphics [game.play_state] menu;
           { game with play_state = play_state; last_update = time }
-    in loop game
+    in if game.quit then () else loop game
 
-  let init (level:int)
-      (menu_controls:(Sdl.keycode * menu_input) list)
-      (game_controls:(Sdl.keycode * game_input) list)
-      (audio:Audio.t) (graphics:Graphics.t) (menu:Menu.t)=
+  let init (audio : Audio.t) (graphics : Graphics.t) (level : int)
+      (menu_controls : (Sdl.keycode * menu_input) list)
+      (game_controls : (Sdl.keycode * game_input) list) : unit =
     Random.self_init ();
     Audio.start_music audio;
     let menu_inputs = Hashtbl.create 6 in
@@ -191,7 +182,7 @@ module Make (S : State.S) = struct
     } in
     List.iter (menu_inputs_press menu_inputs) menu_controls;
     List.iter (game_inputs_press game_inputs) game_controls;
-    loop {
+    let game = {
       state = Playing;
       play_state = S.init 10 20 level;
       last_update = Int32.to_int (Sdl.get_ticks ());
@@ -199,8 +190,13 @@ module Make (S : State.S) = struct
       game_inputs = game_inputs;
       audio = audio;
       graphics = graphics;
-      menu = menu;
       gmenu_pos = 0;
       konami = 0;
-    }
+      quit = false;
+    } in
+    try loop game
+    with S.Gameover play_state -> loop {
+        game with state = Gameover;
+                  play_state = play_state;
+      }
 end
