@@ -63,6 +63,14 @@ module Make (S : State.S) = struct
     then {game with state = Playing; play_state = S.init 10 20 1}
     else {game with state = Playing;}
 
+  (** [gameover_escape x] is the state after pressing the menu button depending
+      on whether [x] is a game over or not. *)
+  let gameover_escape x =
+    if x.state = Gameover
+    then {x with quit = true}
+    else {x with state = Playing}
+
+
   (** [menu_inputs_press inputs (k, i)] maps key [k] to
       input [i] in [inputs]. *)
   let menu_inputs_press
@@ -70,7 +78,7 @@ module Make (S : State.S) = struct
       (k, i:Sdl.keycode * menu_input) : unit =
     let add = Hashtbl.add inputs k in
     match i with
-    | MMenu  -> add ((fun x -> {x with state = Playing}), false)
+    | MMenu  -> add ((fun x -> gameover_escape x), false)
     | MLeft  -> ()
     | MRight -> ()
     | MUp    ->
@@ -192,8 +200,8 @@ module Make (S : State.S) = struct
       | Gameover ->
         game.menu_inputs
       (* let tbl = Hashtbl.create 1 in
-         Hashtbl.add tbl Sdl.K.escape ((fun g -> { g with quit = true }), false);
-         tbl *)
+         Hashtbl.add tbl Sdl.K.escape ((fun g -> { g with quit = true }), 
+         false); tbl *)
       | GameoverHighscore -> Hashtbl.create 0
     in
     let game = handle_events inputs game in
