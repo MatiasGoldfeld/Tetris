@@ -52,6 +52,7 @@ let rec handle_events (menu : t) : t =
       | _ -> menu
     end
 
+(** [loop menu] is unit with byproduct of running the menu loop. *)
 let rec loop (menu : t) : unit =
   let menu = handle_events menu in
   let time = Int32.to_int (Sdl.get_ticks ()) in

@@ -52,5 +52,6 @@ let loop_music audio =
   if Mixer.playing_music () then ()
   else start_music audio
 
+(** [quit audio] is unit with byproduct of quitting the mixer. *)
 let quit (audio:t) : unit=
   Mixer.quit ()

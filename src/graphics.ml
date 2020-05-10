@@ -41,6 +41,8 @@ let render_duck_image (ctx:t) (rect:Sdl.rect) (texture:Tsdl.Sdl.texture) =
 let fill_rect (rect:Sdl.rect) (ctx:t) : unit = 
   Sdl.render_fill_rect ctx.renderer (Some rect) |> ignore
 
+(** [render_spare rect ctx ?a color] is unit with the byproduct of rendering
+    [rect] in [ctx] with the color or duck associated with [color]. *)
 let render_square (rect:Sdl.rect) (ctx:t) ?(a:int=255) (color:color) : unit =
   if ctx.duck_mode then
     let texture = (List.assoc color ctx.duck_images)
@@ -55,6 +57,7 @@ let render_square (rect:Sdl.rect) (ctx:t) ?(a:int=255) (color:color) : unit =
 let fill_coords (x:int) (y:int) (w:int) (h:int) (ctx:t) : unit = 
   let rect = Sdl.Rect.create x y w h in fill_rect rect ctx
 
+(** [create_duck_texture renderer] is the texture of the duck from [renderer]. *)
 let create_duck_texture (renderer:Sdl.renderer) 
     (image_path:string) : Tsdl.Sdl.texture= 
   let surface = (Tsdl_image.Image.load image_path) 
@@ -62,6 +65,8 @@ let create_duck_texture (renderer:Sdl.renderer)
   Sdl.create_texture_from_surface renderer surface 
   |> unpack "failed to make texture"
 
+(** [duck_path_dict path renderer colors count] is the list of duck images
+    from [path] associated with the colors in [colors]. *)
 let rec duck_path_dict
     (path: string)
     (renderer: Sdl.renderer)
@@ -73,6 +78,7 @@ let rec duck_path_dict
                    |> create_duck_texture renderer) in
     (h,texture)::(duck_path_dict path renderer t (count+1))
   | [] -> []
+
 
 let init (duck_mode:bool) (path:string) : t =
   Sdl.init_sub_system Sdl.Init.video |> unpack "Graphics init error";
@@ -136,6 +142,8 @@ let draw_text (ctx:t) (size:int) (text:string) (fg:Sdl.color) (bg:Sdl.color)
   Sdl.free_surface surf;
   Sdl.destroy_texture texture
 
+(** [render_title ctx title x y] is unit with byproduct of rendering the title
+    [title] with [ctx] positioned according to [x] and [y]. *)
 let render_title (ctx:t) (title: string) (x:int) (y:int) = begin
   let bg = Sdl.Color.create 100 100 100 0 in
   let fg = Sdl.Color.create 200 200 200 0 in
@@ -155,6 +163,9 @@ let render_title (ctx:t) (title: string) (x:int) (y:int) = begin
   draw_text ctx size text fg bg (x+x_offset, y);
 end
 
+(** [render_button ctx x y w h border selected] is unit with byproduct of 
+    rendering a button with [ctx] according to the parameters [x], [y], [w], and 
+    [h], with border [border] and state [selected]. *)
 let render_button (ctx:t) x y w h (border:int) selected = begin
   set_color (0, 0, 0) ctx; 
   let outline = Sdl.Rect.create (x-(border)/2) (y-(border)/2) (w+border) (h+border) in
@@ -182,6 +193,7 @@ let render_fields (ctx:t) (menu:M.t) fields coords dimensions = begin
     ) fields;
   30 * (List.length fields);
 end
+
 
 let render_button_option ctx menu (x, y) (w, h) (label:string) selected = begin
   render_button ctx x y w h 2 selected;
@@ -355,6 +367,7 @@ module MakeGameRenderer (S : State.S) = struct
     draw_text ctx size t_time  fg bg (x + x_offset, y + y_offset + size * 2);
     draw_text ctx size t_lines fg bg (x + x_offset, y + y_offset + size * 4);
     draw_text ctx size t_level fg bg (x + x_offset, y + y_offset + size * 6)
+
 
   let render (ctx:t) (states:S.t list) (menu:(string * bool) list) : unit =
     let state = List.hd states in
