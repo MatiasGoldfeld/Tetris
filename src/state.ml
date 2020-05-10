@@ -68,12 +68,13 @@ module Local = struct
   exception Gameover of t
 
 
-
   let pauseable = true
 
   let field_width (state:t) : int =
     Array.length state.playfield.(0)
 
+  (** [field_state_height state] is the actual height of the playfeild in 
+      [state] *)
   let field_state_height (state : t) : int =
     Array.length state.playfield
 
@@ -142,7 +143,9 @@ module Local = struct
       else { state with ghost_row = row - 1 }
     in helper (start_row + 1)
 
-
+  (** [drop_help state] is [state] with a new piece initialized as the 
+      falling piece on the top of the playfield.
+      Raises: Gameover if no piece can be initialized at the top. *)
   let drop_help state =
     let column = 5 - (Tetromino.size state.falling / 2) in
     let row = field_height state in
@@ -168,7 +171,7 @@ module Local = struct
         raise (Gameover {state with events = EndGame::state.events})
     end
 
-  (** [drop piece state] is the [state] with a new piece initialized as the 
+  (** [drop state] is [state] with a new piece initialized as the 
       falling piece on the top of the playfield. *)
   let drop (state:t) : t = 
     let new_state = next_piece state in
@@ -210,16 +213,18 @@ module Local = struct
     |> drop
     |> recalculate_fall_speed
 
+  (** [row_full acc item] is true is [acc] is true and [item] is not None.*)
   let row_full acc item =
     match item with
     | Some x -> true && acc
     | None -> false && acc
 
+  (** [check_row array] is true if [array] is full, false otherwise. *)
   let check_row array =
     Array.fold_left row_full true array
 
-  (* Note: Could not use Array.map becaus we only want to do this for a part
-     of the array. *)
+  (** [fill_in_rows state height] is unit with the byproduct of moving
+      all above rows down a row. *)
   let rec fill_in_rows state height =
     if height >= 1
     then (state.playfield.(height) <- state.playfield.(height - 1);
@@ -229,6 +234,8 @@ module Local = struct
           fill_in_rows state (height - 1))
     else state.playfield.(height) <- Array.make (field_width state) None
 
+  (** [clear_lines_helper state height line_dif] is the state after clearing
+      any full lines in [state] and awarding points accordingly. *)  
   let rec clear_lines_helper state height line_dif =
     if height >= field_height state then begin
       if (check_row state.playfield.(height))
@@ -246,6 +253,8 @@ module Local = struct
       then {state with score = new_score; events = LineClear::state.events} 
       else {state with score = new_score}
 
+  (** [clear_lines state] is the state after clearing
+        any full lines in [state] and awarding points accordingly. *)
   let clear_lines state = 
     clear_lines_helper state (field_state_height state - 1) 0
 
@@ -289,6 +298,8 @@ module Local = struct
       | _ -> false
     end
 
+  (** [place_piece state pos_x pos_y] is the state after placing the falling 
+      piece in [state] in the positino of [pos_x] and [pos_y]. *)
   let place_piece state pos_x pos_y =
     let spin_score_state =
       if is_mini_t_spin state pos_x pos_y then 
@@ -344,6 +355,8 @@ module Local = struct
     end
     else state
 
+  (** [ext_placement_add state] is the state after updating the extended 
+      placement record fields in [state] by one move. *)
   let ext_placement_add state = 
     let move_count_add =
       if snd state.falling_pos = state.ghost_row then 1 else 0 in
@@ -389,7 +402,10 @@ module Local = struct
       |> update_ghost
     else state
 
-  (** Comment up!*)
+
+  (** [hold_drop state piece] is [state] with a piece initialized as the falling
+      piece at the top of the grid.
+  *)
   let hold_drop state piece =
     let new_state = {state with falling = piece; falling_rot = 0} in
     drop_help new_state

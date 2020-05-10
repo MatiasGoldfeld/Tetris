@@ -12,13 +12,16 @@ val toggle_duck : t -> t
     buttons in the menu. *)
 val render_menu : t -> Menu_state.t -> Menu_state.t
 
+(** A module type of a game renderer. *)
 module type GameRenderer = sig
+  (** A module made of a State. *)
   module S : State.S
   (** [render ctx states menu] provides a graphical representation of all
       [states] and pause menu [menu] using graphics context [ctx]. *)
   val render : t -> S.t list -> (string * bool) list -> unit
 end
 
+(** A module that makes a game render adherent to S. *)
 module MakeGameRenderer (S : State.S) :
   GameRenderer with module S = S
 

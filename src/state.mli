@@ -16,10 +16,10 @@ type v =
   | Static of color
   | Ghost of color * int
 
+(** The module type that represents a state. *)
 module type S = sig
   (** The representation of a Tetris gamestate. *)
   type t
-
 
   exception Gameover of t
 
@@ -42,7 +42,7 @@ module type S = sig
   (** [field_width state] is the width of the [state]'s playfield. *)
   val field_width : t -> int
 
-  (** [field_height state] is the height of the [state]'s playfield. *)
+  (** [field_height state] is the height of the [state]'s visible playfield. *)
   val field_height : t -> int
 
   (** [value state c r] is the [v] of [state's] playfield at 
@@ -81,6 +81,7 @@ module type S = sig
   val handle_events : (event -> unit) -> t -> t
 end
 
+(** A module that represents a local state. *)
 module Local : S
 
 
