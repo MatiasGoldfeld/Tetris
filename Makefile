@@ -7,7 +7,7 @@ MLS=$(PATHS:=.ml)
 MLIS=$(PATHS:=.mli)
 TEST=test.byte
 MAIN=main.byte
-OCAMLBUILD=ocamlbuild -use-ocamlfind
+OCAMLBUILD=ocamlbuild -tag thread -use-ocamlfind
 
 default: build
 	utop
