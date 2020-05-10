@@ -31,6 +31,7 @@ module type S = sig
 end
 
 module Make (S : State.S) = struct
+  (** A module that makes a game render according to the S from Make. *)
   module GR = Graphics.MakeGameRenderer (S)
 
   type inputs_t = (Sdl.keycode, (t -> t) * bool) Hashtbl.t
@@ -89,6 +90,10 @@ module Make (S : State.S) = struct
     | GHard  -> add (state_fun (S.hard_drop), false)
     | GHold  -> add (state_fun (S.hold), false)
 
+
+  (** [konami_code key game] is the [game] updated with the state of the konami
+      code. If the konami code is entered, [konami_code] is the game with duck
+      mode toggled opposite to what it was. *)
   let konami_code (key:Sdl.keycode) (game:t) : t =
     let code = [
       Sdl.K.up; Sdl.K.up;
@@ -128,6 +133,8 @@ module Make (S : State.S) = struct
         | _ -> game
       end
 
+  (** [loop game] is unit with the side effect of running a game loop for the
+      game. *)
   let rec loop (game:t) : unit =
     Audio.loop_music game.audio;
     let inputs = match game.state with 

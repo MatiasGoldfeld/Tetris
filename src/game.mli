@@ -18,7 +18,10 @@ type game_input =
   | GHard
   | GHold
 
+
+(** The type of a game module. *)
 module type S = sig
+
   (** The representation of a game. *)
   type t
 
@@ -29,4 +32,5 @@ module type S = sig
     (Sdl.keycode * game_input) list -> Audio.t -> Graphics.t -> Menu.t -> unit
 end
 
+(** The module that makes a state adherent to S. *)
 module Make (S : State.S) : S

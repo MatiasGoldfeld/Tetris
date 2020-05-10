@@ -29,6 +29,7 @@ module type Button = sig
   val coords : t -> (int*int)
 end
 
+(** [init_empty_button b_type] is an empty button of [b_type]. *)
 let init_empty_button b_type = {
   button_type = Button b_type;
   coords= (0,0);
@@ -36,6 +37,7 @@ let init_empty_button b_type = {
   selected= false;
 }
 
+(** [init_empty_text] is a tuple of [label] with an m_feild with empty text. *)
 let init_empty_text label = 
   (label, {
       text = "";
@@ -67,7 +69,8 @@ let update_buttons menu buttons =
     menu with buttons=buttons
   }
 
-
+(** [in_button button click_coords] is true if the [click_coords] are in 
+    [button], false otherwise. *)
 let in_button button click_coords : bool = 
   let (button_x, button_y) = button.coords in
   let (click_x, click_y) = click_coords in
@@ -107,6 +110,7 @@ let rec handle_events (menu : t) : t =
       | _ -> menu
     end
 
+(** [loop menu] is unit with byproduct of running the menu loop. *)
 let rec loop (menu : t) : unit =
   let menu = handle_events menu in
   let time = Int32.to_int (Sdl.get_ticks ()) in

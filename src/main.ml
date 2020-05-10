@@ -2,6 +2,7 @@ open Tsdl
 
 module LocalGame = Game.Make (State.Local)
 
+(** [main] waits for a game start, then exectues that game. *)
 let main () =
   match Sdl.init Sdl.Init.(events + timer) with
   | Error (`Msg e) -> Sdl.log "Main init error: %s" e; exit 1
