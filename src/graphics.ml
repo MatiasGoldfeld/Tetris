@@ -400,7 +400,6 @@ module MakeGameRenderer (S : State.S) = struct
     draw_text ctx size t_lines fg bg (x + x_offset, y + y_offset + size * 4);
     draw_text ctx size t_level fg bg (x + x_offset, y + y_offset + size * 6)
 
-
   let render (ctx:t) (states:S.t list) (menu:(string * bool) list) : unit =
     let state = List.hd states in
     let w_desire, h_desire = 24, 20 in
