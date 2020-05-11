@@ -26,10 +26,6 @@ module type S = sig
   (** [pauseable] is whether this state is pauseable. *)
   val pauseable : bool
 
-  (** [init width height level] is the initialized state of the game with
-      playfield of size [width] by [height] starting at [level]. *)
-  val init : int -> int -> int -> t
-
   (** [score state] is the score of [state]. *)
   val score : t -> int
 
@@ -84,6 +80,9 @@ end
 (** A module that represents a local state. *)
 module Local : S
 
+(** [create_state width height level] is the initialized state of the game with
+    playfield of size [width] by [height] starting at [level]. *)
+val create_state : int -> int -> int -> Local.t
 
 (** [make_test_state scoret linest levelt fall_speedt step_deltat 
     ext_placement_move_countt ext_placement_deltat min_rowt eventst queuet 

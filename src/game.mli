@@ -19,17 +19,19 @@ type game_input =
   | GHold
 
 
-(** The type of a game module. *)
+(** The module which runs, manages state, handles input, and displays a game. *)
 module type S = sig
+  module S : State.S
+
   (** The representation of a game. *)
   type t
 
-  (** [init audio graphics level menu_controls game_controls] begins the game
-      starting at [level], using [audio] and [graphics] contexts. Uses Tsdl
+  (** [init audio graphics menu_controls game_controls state] begins the game
+      starting at [state], using [audio] and [graphics] contexts. Uses Tsdl
       [menu_controls] and [game_controls]. *)
-  val init :  Audio.t -> Graphics.t -> int -> (Sdl.keycode * menu_input) list ->
-    (Sdl.keycode * game_input) list -> unit Lwt.t
+  val init : Audio.t -> Graphics.t -> (Sdl.keycode * menu_input) list ->
+    (Sdl.keycode * game_input) list -> S.t -> unit Lwt.t
 end
 
 (** The module that makes a state adherent to S. *)
-module Make (S : State.S) : S
+module Make (S : State.S) : S with module S = S

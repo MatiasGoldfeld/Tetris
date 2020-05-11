@@ -27,12 +27,15 @@ type game_state =
   | GameoverHighscore
 
 module type S = sig
+  module S : State.S
   type t
-  val init : Audio.t -> Graphics.t -> int -> (Sdl.keycode * menu_input) list ->
-    (Sdl.keycode * game_input) list -> unit Lwt.t
+  val init : Audio.t -> Graphics.t -> (Sdl.keycode * menu_input) list ->
+    (Sdl.keycode * game_input) list -> S.t -> unit Lwt.t
 end
 
 module Make (S : State.S) = struct
+  module S = S
+
   (** A module that makes a game render according to the S from Make. *)
   module GR = Graphics.MakeGameRenderer (S)
 
@@ -93,7 +96,6 @@ module Make (S : State.S) = struct
     | GHard  -> add (state_fun (S.hard_drop), false)
     | GHold  -> add (state_fun (S.hold), false)
 
-
   (** [konami_code key game] is the [game] updated with the state of the konami
       code. If the konami code is entered, [konami_code] is the game with duck
       mode toggled opposite to what it was. *)
@@ -114,8 +116,6 @@ module Make (S : State.S) = struct
     then {game with konami = 0; graphics = Graphics.toggle_duck game.graphics}
     else {game with konami = next}
 
-
-
   (** [key_down_helper inputs key game repeat] is the game after handling
       the key down inputs. *)
   let key_down_helper inputs key game repeat=
@@ -125,8 +125,6 @@ module Make (S : State.S) = struct
         action game
       else game
     else game
-
-
 
   (** [handle_events] handles all SDL events by using actions from [inputs] in
       [game]. *)
@@ -191,9 +189,10 @@ module Make (S : State.S) = struct
     then (Audio.stop_music game.audio; Lwt.return ())
     else loop game
 
-  let init (audio : Audio.t) (graphics : Graphics.t) (level : int)
+  let init (audio : Audio.t) (graphics : Graphics.t)
       (menu_controls : (Sdl.keycode * menu_input) list)
-      (game_controls : (Sdl.keycode * game_input) list) : unit Lwt.t =
+      (game_controls : (Sdl.keycode * game_input) list)
+      (play_state : S.t) : unit Lwt.t =
     Audio.loop_music audio;
     Random.self_init ();
     Audio.start_music audio;
@@ -206,7 +205,7 @@ module Make (S : State.S) = struct
     List.iter (game_inputs_press game_inputs) game_controls;
     let game = {
       state = Playing;
-      play_state = S.init 10 20 level;
+      play_state = play_state;
       last_update = Int32.to_int (Sdl.get_ticks ());
       menu_inputs = menu_inputs;
       game_inputs = game_inputs;

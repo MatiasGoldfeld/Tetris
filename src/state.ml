@@ -22,7 +22,6 @@ module type S = sig
   type t
   exception Gameover of t
   val pauseable : bool
-  val init : int -> int -> int -> t
   val score : t -> int
   val level : t -> int
   val lines : t -> int
@@ -69,7 +68,6 @@ module Local = struct
   }
 
   exception Gameover of t
-
 
   let pauseable = true
 
@@ -190,31 +188,6 @@ module Local = struct
     let fall_speed = 1000. *. (0.8 -. (level_f *. 0.007)) ** level_f in
     { state with fall_speed = Float.to_int fall_speed }
 
-
-  let init (width:int) (height:int) (level:int) : t =
-    let queue = shuffle Tetromino.defaults in
-    {
-      score = 0;
-      lines = 0;
-      level = level;
-      fall_speed = -1;
-      step_delta = 0;
-      ext_placement_move_count = 0;
-      ext_placement_delta = 0;
-      min_row = -1;
-      events = [];
-      queue = queue;
-      held = None;
-      held_before = false;
-      falling = List.hd queue;
-      falling_rot = -1;
-      falling_pos = -1, -1;
-      ghost_row = -1;
-      playfield = Array.make_matrix (2*height) width None
-    }
-    |> drop
-    |> recalculate_fall_speed
-
   (** [row_full acc item] is true is [acc] is true and [item] is not None.*)
   let row_full acc item =
     match item with
@@ -261,14 +234,12 @@ module Local = struct
   let clear_lines state = 
     clear_lines_helper state (field_state_height state - 1) 0
 
-
   (** [ghost_busters state check r] is the ghost value of the block at [r] if r
       has a value. Otherwise, it is Empty. *)
   let ghost_busters state check r =
     match check (r - state.ghost_row + field_height state) with
     | Some color -> Ghost (color, 95)
     | None -> Empty
-
 
   (** [non_static_valye state tet fall_rot c fall_c r fall_r] is the value
       of the block at [c] and [r] if it is not a static value. *)
@@ -396,7 +367,6 @@ module Local = struct
         ext_placement_delta = 0
       }
 
-
   let rotate (rotation:[`CCW | `CW]) (state:t) : t =
     let rot = state.falling_rot in
     let new_rot = (rot + match rotation with `CCW -> 3 | `CW -> 1) mod 4 in
@@ -414,7 +384,6 @@ module Local = struct
         else test_rot t
     in test_rot (Tetromino.wall_kicks state.falling rot rotation)
 
-
   let move (direction:[`Left | `Right]) (state:t) : t =
     let new_pos = match direction with
       | `Left -> fst state.falling_pos - 1, snd state.falling_pos
@@ -425,7 +394,6 @@ module Local = struct
       { ext_state with falling_pos = new_pos; events = Movement::state.events}
       |> update_ghost
     else state
-
 
   (** [hold_drop state piece] is [state] with a piece initialized as the falling
       piece at the top of the grid.
@@ -456,6 +424,28 @@ module Local = struct
     List.iter f (List.rev state.events);
     { state with events = [] }
 end
+
+let create_state (width:int) (height:int) (level:int) : Local.t =
+  let queue = Local.shuffle Tetromino.defaults in
+  Local.recalculate_fall_speed @@ Local.drop {
+    score = 0;
+    lines = 0;
+    level = level;
+    fall_speed = -1;
+    step_delta = 0;
+    ext_placement_move_count = 0;
+    ext_placement_delta = 0;
+    min_row = -1;
+    events = [];
+    queue = queue;
+    held = None;
+    held_before = false;
+    falling = List.hd queue;
+    falling_rot = -1;
+    falling_pos = -1, -1;
+    ghost_row = -1;
+    playfield = Array.make_matrix (2*height) width None
+  }
 
 let make_test_state scoret linest levelt fall_speedt step_deltat 
     ext_placement_move_countt ext_placement_deltat min_rowt eventst queuet 

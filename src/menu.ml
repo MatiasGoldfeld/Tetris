@@ -70,7 +70,8 @@ let rec loop (menu : t) : unit Lwt.t =
         if Menu_state.is_multiplayer menu.menu then
           Lwt.return ()
         else
-          LocalGame.init menu.audio menu.graphics 0 menu_controls game_controls
+          State.create_state 10 20 1
+          |> LocalGame.init menu.audio menu.graphics menu_controls game_controls
       in Lwt.return
         { menu with menu = Menu_state.set_start_game menu.menu false }
     else Lwt.return menu in

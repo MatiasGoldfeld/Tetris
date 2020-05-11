@@ -24,7 +24,7 @@ module Client = struct
   exception Gameover of t
 
   (** [new_state ()] is a new game state. *)
-  let new_state () = S.init 10 20 1
+  let new_state () = State.create_state 10 20 1
 
   (** [create_sock ())] is the client sock. *)
   let create_sock () : Lwt_unix.file_descr =
@@ -61,6 +61,9 @@ module Client = struct
       out_channel = oc;
     }
 
+  let send_command (client : t) (command : client_command) : unit Lwt.t =
+    Lwt_io.write_value client.out_channel command
+
   let pauseable = false
 
   let init _ _ _ =
@@ -73,9 +76,10 @@ module Client = struct
   (** [return f client] is [client]'s local state applied to [f]. *)
   let return (f : S.t -> 'a) (client : t) : 'a = f !(client.local)
 
-  (** [wrap f client] is [client] with [f] applied to the local player state. *)
-  let wrap (f : S.t -> S.t) (client : t) : t =
-    client.local := f !(client.local);
+  (** [wrap command client] is [client] with the side effect of sending
+      [command] to the server. *)
+  let wrap (command : client_command) (client : t)  : t =
+    Lwt.async (fun _ -> send_command client command);
     client
 
   let score : t -> int = return S.score
@@ -86,12 +90,13 @@ module Client = struct
   let value : t -> int -> int -> State.v = return S.value
   let queue : t -> Tetromino.t list = return S.queue
   let held : t -> Tetromino.t option = return S.held
-  let rotate (rot : [`CCW | `CW]) : t -> t = wrap (S.rotate rot)
-  let move (dir : [`Left | `Right]) : t -> t = wrap (S.move dir)
-  let hold : t -> t = wrap S.hold
-  let hard_drop : t -> t = wrap S.hard_drop
-  let handle_events (f : State.event -> unit) : t -> t  =
-    wrap (S.handle_events f)
+  let rotate (rot : [`CCW | `CW]) : t -> t = wrap (Rotate rot)
+  let move (dir : [`Left | `Right]) : t -> t = wrap (Move dir)
+  let hold : t -> t = wrap Hold
+  let hard_drop : t -> t = wrap HardDrop
+  let handle_events (f : State.event -> unit) (client : t) : t  =
+    client.local := (S.handle_events f !(client.local));
+    client
 end
 
 module Server = struct
@@ -105,7 +110,7 @@ module Server = struct
   type command_buffer = (Lwt_unix.sockaddr * client_command) list
 
   type t = {
-    status : connecting_status;
+    status : connecting_status ref;
     sock : Lwt_unix.file_descr;
     buffer : command_buffer ref;
     handlers : unit Lwt.t list ref;
@@ -117,7 +122,7 @@ module Server = struct
   exception Gameover of t
 
   (** [new_state ()] is a new game state. *)
-  let new_state () = S.init 10 20 1
+  let new_state () = State.create_state 10 20 1
 
   (** [register_client server client] registers [client] in [server], spawning
       a handler to handle incoming commands from the client. *)
@@ -157,7 +162,7 @@ module Server = struct
   let create_server (name : string) (addr : Lwt_unix.sockaddr) : t =
     let sock = create_sock addr in
     let server = {
-      status = Creating;
+      status = ref Creating;
       sock = sock;
       buffer = ref [];
       handlers = ref [];
@@ -165,17 +170,18 @@ module Server = struct
       player_states = Hashtbl.create 3;
       out_channels = Hashtbl.create 3;
     } in
-    let acceptor = accept_clients server sock () in
-    { server with status = Pending acceptor }
+    server.status := Pending (accept_clients server sock ());
+    server
 
   (** [start server] is [server] with the game started and with it not accepting
       more clients.
       Requires: [server] is not already started. *)
   let start (server : t) : t =
-    match server.status with
+    match !(server.status) with
     | Pending acceptor ->
       Lwt.cancel acceptor;
-      { server with status = Done }
+      server.status := Done;
+      server
     | Creating | Done ->
       failwith "Cannot start non-pending server"
 
@@ -217,7 +223,9 @@ module Server = struct
     let%lwt () = Lwt_main.yield () in
     let commands = List.rev !(server.buffer) in
     server.buffer := [];
-    handle_commands server commands;
+    if !(server.status) == Done
+    then handle_commands server commands
+    else ();
     let update_fun _ state_prom = Some begin
         let%lwt state = state_prom in
         S.update state delta false
@@ -236,7 +244,16 @@ module Server = struct
 
   (** [wrap f server] is [server] with [f] applied to the local player state. *)
   let wrap (f : S.t -> S.t) (server : t) : t =
-    { server with local = f server.local }
+    if !(server.status) <> Done
+    then server
+    else { server with local = f server.local }
+
+  (** [start_trigger f server] is [server] with the game started if it wasn't.
+      If it was, it is [wrap f server]. *)
+  let start_trigger (f : S.t -> S.t) (server : t) : t =
+    if !(server.status) <> Done
+    then start server
+    else wrap f server
 
   let score : t -> int = return S.score
   let level : t -> int = return S.level
@@ -249,7 +266,7 @@ module Server = struct
   let rotate  (rot : [`CCW | `CW]) : t -> t = wrap (S.rotate rot)
   let move (dir : [`Left | `Right]) : t -> t = wrap (S.move dir)
   let hold : t -> t = wrap S.hold
-  let hard_drop : t -> t = wrap S.hard_drop
+  let hard_drop : t -> t = start_trigger S.hard_drop
   let handle_events (f : State.event -> unit) : t -> t =
     wrap (S.handle_events f)
 end
