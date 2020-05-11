@@ -1,5 +1,5 @@
-MODULES=audio game graphics main menu state tetromino menu_state
-PKGS=oUnit,tsdl,tsdl_mixer,tsdl_ttf,tsdl_image, extlib
+MODULES=audio game graphics main menu state tetromino menu_state remote
+PKGS=oUnit,tsdl,tsdl_mixer,tsdl_ttf,tsdl_image,lwt,lwt.unix,lwt_ppx,extlib
 SRC=src/
 PATHS=$(addprefix $(SRC), $(MODULES))
 OBJECTS=$(PATHS:=.cmo)
@@ -7,7 +7,7 @@ MLS=$(PATHS:=.ml)
 MLIS=$(PATHS:=.mli)
 TEST=test.byte
 MAIN=main.byte
-OCAMLBUILD=ocamlbuild -use-ocamlfind
+OCAMLBUILD=ocamlbuild -tag thread -use-ocamlfind
 
 default: build
 	utop

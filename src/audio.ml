@@ -29,8 +29,11 @@ let init (path:string) : t =
   }
 
 let play_sound (audio:t) (event:State.event) : unit =
-  Mixer.play_channel (-1)  (List.assoc event audio.sound_effects) 1
-  |> unpack "Failed to play sound" |> ignore
+  match List.assoc_opt event audio.sound_effects with
+  | Some effect ->
+    Mixer.play_channel (-1) effect 1
+    |> unpack "Failed to play sound" |> ignore
+  | None -> ()
 
 let adjust_music (audio:t) (volume:float) : unit =
   volume *. (Int.to_float Mixer.max_volume)
