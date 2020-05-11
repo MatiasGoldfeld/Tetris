@@ -180,6 +180,8 @@ end
 (** The module that is equivalent to a Menu_state. *)
 module M = Menu_state
 
+(** [render_field ctx menu (x,y) (w,h) label] renders the text field that
+    has [label]. *)
 let render_field ctx menu (x,y) (w,h) label = begin
   let bg = Sdl.Color.create 100 100 100 255 in
   let fg = Sdl.Color.create 200 200 200 255 in
@@ -204,7 +206,9 @@ let render_field ctx menu (x,y) (w,h) label = begin
   end
 end
 
-let render_action_button ctx menu (x, y) (w, h) (label:string) selected = begin
+(** [render_action_button ctx menu (x, y) (w, h) label selected] 
+    renders an action button with [label]. *)
+let render_action_button ctx menu (x, y) (w, h) label selected = begin
   let border_color = (68,53,91) in
   let button_color = (68,53,91) in
   render_button ctx x y w h 2 border_color button_color selected;
@@ -214,7 +218,9 @@ let render_action_button ctx menu (x, y) (w, h) (label:string) selected = begin
   (M.get_button menu label |> M.update_button (x,y) (w,h), 30)
 end
 
-let render_checkbox_button ctx menu (x, y) (w, h) (label:string) selected = begin
+(** [render_checkbox_button ctx menu (x, y) (w, h) label selected] renders
+    the checkbox button. *)
+let render_checkbox_button ctx menu (x, y) (w, h) label selected = begin
   let border_color = (0,0,0) in
   let button_color = (255,255,255) in
   render_button ctx x y w h 2 border_color button_color selected;
@@ -238,7 +244,6 @@ let render_checkbox_button ctx menu (x, y) (w, h) (label:string) selected = begi
   else
     (M.get_button menu label |> M.update_button (x,y) (w,h), 30)
 end
-
 
 let rendered_button ctx button height (x,y) menu_r label= 
   let updated_button_info = begin
