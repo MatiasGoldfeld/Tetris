@@ -268,17 +268,8 @@ let make_update_test
     (soft_drop : bool)
     (expected_output : TestS.t) : test = 
   name >:: (fun _ -> 
-      assert_equal expected_output (TestS.update state delta soft_drop))
-
-let make_gameover_test
-    (name : string)
-    (state : TestS.t)
-    (delta : int)
-    (soft_drop : bool)
-    (expected_output : TestS.t) : test = 
-  name >:: (fun _ -> 
-      assert_raises (State.Local.Gameover(expected_output)) 
-        (fun _ -> TestS.update state delta soft_drop))
+      assert_equal expected_output
+        (Lwt_main.run (TestS.update state delta soft_drop)))
 
 let test_state_1 : TestS.t =  State.make_test_state 0 0 1 500 0 0 0 20 [] [] 
     None false tet_t 0 (4, 20) 38 (Array.make_matrix 40 10 None)
@@ -387,7 +378,7 @@ let test_state_7 : TestS.t =  State.make_test_state 0 0 1 1000 960 0 480 19 []
     None false tet_i 0 (5, 19) 19 (make_test_array [((21,39),(0,8))])
 
 let test_state_7_1 : TestS.t =  State.make_test_state 0 0 1 1000 1020 0 480 19 
-    [EndGame; Locking] [tet_o; tet_i; tet_l; tet_s; tet_t; tet_z; tet_o; tet_i]  
+    [Endgame; Locking] [tet_o; tet_i; tet_l; tet_s; tet_t; tet_z; tet_o; tet_i]  
     None false tet_j 0 (5, 19) 19 
     (make_test_array [((21,39),(0,8)); ((20,20),(5,8))])
 
@@ -415,7 +406,6 @@ let update_tests = [
   make_update_test "Clear three lines" test_state_6_4 60 false test_state_6_5;
   make_update_test "Tetris!" test_state_6_6 60 false test_state_6_7;
   make_update_test "Level up" test_state_6_8 60 false test_state_6_9;
-  make_gameover_test "Gameover" test_state_7 60 false test_state_7_1
 ]
 
 

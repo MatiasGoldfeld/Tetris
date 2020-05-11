@@ -15,7 +15,9 @@ module type Button = sig
   val coords : t -> (int*int)
 end
 
-module LocalGame = Game.Make (State.Local)
+module Local = Game.Make (State.Local)
+module Client = Game.Make (Remote.Client)
+module Server = Game.Make (Remote.Server)
 
 let menu_controls = [
   (Sdl.K.escape, Game.MMenu);
@@ -53,20 +55,23 @@ let rec handle_events (menu : t) : t =
       | `Key_down -> 
         let key = (Sdl.Event.(get event keyboard_keycode)) in begin
           if key = Sdl.K.backspace then
-            let text = Menu_state.address menu.menu in
+            let text = 
+              Menu_state.selected_text_field menu.menu  |> Menu_state.text menu.menu
+            in
             let text_length = String.length text in
             if text <> "" then 
               let updated_menu = String.sub text 0 (text_length-1) 
-                                 |> Menu_state.update_address menu.menu in
+                                 |> Menu_state.update_text menu.menu in
               {menu with menu = updated_menu }
             else menu
           else menu
         end
       | `Text_input -> 
         let text = Sdl.Event.(get event text_input_text) in
-        let address = Menu_state.address menu.menu in
-        let updated_menu = Menu_state.update_address (menu.menu) 
-            (address^text) in
+        let current_text = Menu_state.selected_text_field menu.menu 
+                           |> Menu_state.text menu.menu in
+        let updated_menu = Menu_state.update_text (menu.menu) 
+            (current_text^text) in
         {menu with menu = updated_menu}
       | `Quit ->
         Sdl.log "Quit event handled from main menu";
@@ -78,6 +83,20 @@ let rec handle_events (menu : t) : t =
 let adjust_music menu delta =
   let audio = menu.audio in
   Audio.adjust_music audio delta
+
+let start_multiplayer_game (menu : t) : unit Lwt.t =
+  match String.split_on_char ':' (Menu_state.address menu.menu) with
+  | ip :: port :: [] ->
+    let username = Menu_state.text menu.menu "Username" in
+    let addr = Lwt_unix.ADDR_INET
+        (Unix.inet_addr_of_string ip, int_of_string port) in
+    if Menu_state.is_host menu.menu then
+      let state = Remote.create_server username addr in
+      Server.init menu.audio menu.graphics menu_controls game_controls state
+    else
+      let state = Remote.create_client username addr in
+      Client.init menu.audio menu.graphics menu_controls game_controls state
+  | _ -> Lwt.return ()
 
 (** [loop menu] runs the main menu loop, handling input and rendering the
     menu. *)
@@ -92,10 +111,10 @@ let rec loop (menu : t) : unit Lwt.t =
     if Menu_state.should_start_game menu.menu then 
       let%lwt () =
         if Menu_state.is_multiplayer menu.menu then
-          Lwt.return ()
+          start_multiplayer_game menu
         else
           State.create_state 10 20 1
-          |> LocalGame.init menu.audio menu.graphics menu_controls game_controls
+          |> Local.init menu.audio menu.graphics menu_controls game_controls
       in Lwt.return
         { menu with menu = Menu_state.set_start_game menu.menu false }
     else Lwt.return menu in

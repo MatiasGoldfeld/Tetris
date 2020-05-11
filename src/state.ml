@@ -35,6 +35,10 @@ module type S = sig
   val hold : t -> t
   val hard_drop : t -> t
   val handle_events : t -> t * event list
+  val send_lines : t -> int -> t
+  val receive_lines : t -> int list -> t
+  val name : t -> string
+  val all_states : t -> t list
 end
 
 module Local = struct
@@ -94,7 +98,7 @@ module Local = struct
   (** [tetris_lines state rand_spot lines_cleared] is the state with [rand_spot]
       added to the sender list in [state] if [lines_cleared] is 4 *)
   let tetris_lines state rand_spot lines_cleared =
-    if lines_cleared = 4
+    if lines_cleared = 4 && (not pauseable) 
     then {state with sender = 
                        rand_spot::rand_spot::rand_spot::rand_spot::state.sender}
     else state
@@ -102,16 +106,13 @@ module Local = struct
 
   let send_lines state lines_cleared =
     let rand_spot = Random.int (field_width state - 1) in
-    if lines_cleared = 2 
+    if lines_cleared = 2 && (not pauseable) 
     then {state with sender = rand_spot::state.sender}
     else begin
-      if lines_cleared = 3
+      if lines_cleared = 3 && (not pauseable) 
       then {state with sender = rand_spot::rand_spot::state.sender}
       else tetris_lines state rand_spot lines_cleared
     end
-
-
-
   let receive_lines state received_lines = 
     {state with receiver = received_lines@state.receiver}
 
@@ -470,14 +471,9 @@ module Local = struct
   let handle_events (state:t) : t * event list =
     { state with events = [] }, state.events
 
+  let name (state:t) : string = ""
 
-
-
-
-
-
-
-
+  let all_states (state:t) = [state]
 end
 
 let create_state (width:int) (height:int) (level:int) : Local.t =

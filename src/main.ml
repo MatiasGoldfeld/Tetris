@@ -59,4 +59,4 @@ let main : unit Lwt.t =
     Sdl.quit ();
     exit 0
 
-let () = Lwt_main.run @@ main
+let () = Lwt_main.run main

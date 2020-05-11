@@ -82,6 +82,12 @@ module type S = sig
   val receive_lines : t -> int list -> t
 
 
+  (** [name state] is the name of [state]. *)
+  val name : t -> string
+
+  (** [all_states state] is all of the states in [state] which must be
+      rendered. *)
+  val all_states : t -> t list
 end
 
 (** A module that represents a local state. *)
