@@ -83,19 +83,7 @@ let update_buttons menu buttons =
   }
 
 let set_start_game menu value = 
-  let start_game = begin
-    let regex = Str.regexp 
-        "\\b(25[0-5]\\|2[0-4][0-9]\\|1[0-9][0-9]\\|[1-9]?[0-9])\\.
-        (25[0-5]\\|2[0-4][0-9]\\|1[0-9][0-9]\\|[1-9]?[0-9])\\.
-        (25[0-5]\\|2[0-4][0-9]\\|1[0-9][0-9]\\|[1-9]?[0-9])\\.
-        (25[0-5]\\|2[0-4][0-9]\\|1[0-9][0-9]\\|[1-9]?[0-9])\\b
-        :[1-9]\\|[1-9][0-9]\\|[1-9][0-9][0-9]\\|[1-9][0-9][0-9][0-9]" 
-    in
-    if Str.string_match regex menu.address 0 
-    then value
-    else false
-  end in
-  {menu with start_game = start_game && value}
+  {menu with start_game = value}
 
 let should_start_game menu = 
   menu.start_game

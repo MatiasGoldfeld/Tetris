@@ -86,16 +86,19 @@ let adjust_music menu delta =
 
 let start_multiplayer_game (menu : t) : unit Lwt.t =
   match String.split_on_char ':' (Menu_state.address menu.menu) with
-  | ip :: port :: [] ->
-    let username = Menu_state.text menu.menu "Username" in
-    let addr = Lwt_unix.ADDR_INET
-        (Unix.inet_addr_of_string ip, int_of_string port) in
-    if Menu_state.is_host menu.menu then
-      let state = Remote.create_server username addr in
-      Server.init menu.audio menu.graphics menu_controls game_controls state
-    else
-      let state = Remote.create_client username addr in
-      Client.init menu.audio menu.graphics menu_controls game_controls state
+  | ip :: port :: [] -> begin
+      try begin
+        let username = Menu_state.text menu.menu "Username" in
+        let addr = Lwt_unix.ADDR_INET
+            (Unix.inet_addr_of_string ip, int_of_string port) in
+        if Menu_state.is_host menu.menu then
+          let state = Remote.create_server username addr in
+          Server.init menu.audio menu.graphics menu_controls game_controls state
+        else
+          let state = Remote.create_client username addr in
+          Client.init menu.audio menu.graphics menu_controls game_controls state
+      end with _ -> Lwt.return ()
+    end
   | _ -> Lwt.return ()
 
 (** [loop menu] runs the main menu loop, handling input and rendering the
