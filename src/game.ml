@@ -1,4 +1,6 @@
 open Tsdl
+open Lwt.Infix
+open Ppx_lwt
 
 type menu_input = 
   | MMenu
@@ -25,12 +27,15 @@ type game_state =
   | GameoverHighscore
 
 module type S = sig
+  module S : State.S
   type t
-  val init : Audio.t -> Graphics.t -> int -> (Sdl.keycode * menu_input) list ->
-    (Sdl.keycode * game_input) list -> unit
+  val init : Audio.t -> Graphics.t -> (Sdl.keycode * menu_input) list ->
+    (Sdl.keycode * game_input) list -> S.t -> unit Lwt.t
 end
 
 module Make (S : State.S) = struct
+  module S = S
+
   (** A module that makes a game render according to the S from Make. *)
   module GR = Graphics.MakeGameRenderer (S)
 
@@ -54,23 +59,6 @@ module Make (S : State.S) = struct
     quit : bool;
   }
 
-
-
-  (** [retry_or_resume game] is the state of [game] based on if it should be a 
-      retry or a resume game. *)
-  let retry_or_resume game =
-    if game.state = Gameover
-    then {game with state = Playing; play_state = S.init 10 20 1}
-    else {game with state = Playing;}
-
-  (** [gameover_escape x] is the state after pressing the menu button depending
-      on whether [x] is a game over or not. *)
-  let gameover_escape x =
-    if x.state = Gameover
-    then {x with quit = true}
-    else {x with state = Playing}
-
-
   (** [menu_inputs_press inputs (k, i)] maps key [k] to
       input [i] in [inputs]. *)
   let menu_inputs_press
@@ -78,16 +66,16 @@ module Make (S : State.S) = struct
       (k, i:Sdl.keycode * menu_input) : unit =
     let add = Hashtbl.add inputs k in
     match i with
-    | MMenu  -> add ((fun x -> gameover_escape x), false)
+    | MMenu  -> add ((fun g -> { g with state = Playing }), false)
     | MLeft  -> ()
     | MRight -> ()
     | MUp    ->
       add ((fun x -> {x with gmenu_pos = max 0 (x.gmenu_pos - 1)}), true)
     | MDown  ->
       add ((fun x -> {x with gmenu_pos = min 1 (x.gmenu_pos + 1)}), true)
-    | MEnter -> add ((fun x -> match x.gmenu_pos with
-        | 0 -> retry_or_resume x
-        | 1 -> { x with quit = true }
+    | MEnter -> add ((fun g -> match g.gmenu_pos with
+        | 0 -> { g with state = Playing }
+        | 1 -> { g with quit = true }
         | _ -> failwith "Invalid in-game menu position"
       ), false)
 
@@ -107,7 +95,6 @@ module Make (S : State.S) = struct
     | GSoft  -> inputs.soft_drop <- k
     | GHard  -> add (state_fun (S.hard_drop), false)
     | GHold  -> add (state_fun (S.hold), false)
-
 
   (** [konami_code key game] is the [game] updated with the state of the konami
       code. If the konami code is entered, [konami_code] is the game with duck
@@ -129,8 +116,6 @@ module Make (S : State.S) = struct
     then {game with konami = 0; graphics = Graphics.toggle_duck game.graphics}
     else {game with konami = next}
 
-
-
   (** [key_down_helper inputs key game repeat] is the game after handling
       the key down inputs. *)
   let key_down_helper inputs key game repeat=
@@ -140,8 +125,6 @@ module Make (S : State.S) = struct
         action game
       else game
     else game
-
-
 
   (** [handle_events] handles all SDL events by using actions from [inputs] in
       [game]. *)
@@ -163,70 +146,68 @@ module Make (S : State.S) = struct
         | _ -> game
       end
 
+  let handle_state_events (game:t) : t =
+    let state, events = S.handle_events game.play_state in
+    let game_ref = ref { game with play_state = state } in
+    let handle_event = function
+      | State.Endgame -> game_ref := { !game_ref with state = Gameover }
+      | x -> Audio.play_sound game.audio x
+    in List.iter handle_event events;
+    !game_ref
 
-  (** [game_helper game delta time] is a game with all of the updated
+  (** [update game delta time] is a game with all of the updated
       parts from a cycle for the game. *)
-  let game_helper game delta time= 
+  let update game delta time : t Lwt.t = 
     match game.state with
     | Gameover -> 
-      let menu = 
-        [("Retry", game.gmenu_pos = 0); ("Quit", game.gmenu_pos = 1)] in
+      let menu = [("Gameover", false); ("Quit", true)] in
       GR.render game.graphics [game.play_state] menu;
-      game
-    | GameoverHighscore -> game
+      Lwt.return game
+    | GameoverHighscore -> Lwt.return game
     | Playing | GameMenu ->
       let soft_sc = Sdl.get_scancode_from_key game.game_inputs.soft_drop in
       let soft_down = if game.state = GameMenu then false else
           (Sdl.get_keyboard_state ()).{soft_sc} = 1 in
-      let play_state =
+      let%lwt play_state =
         if game.state = GameMenu && S.pauseable
-        then game.play_state
+        then Lwt.return game.play_state
         else S.update game.play_state delta soft_down
       in 
       let menu = if game.state = Playing then [] else
           [("Resume", game.gmenu_pos = 0); ("Quit", game.gmenu_pos = 1)] in
       GR.render game.graphics [game.play_state] menu;
-      { game with play_state = play_state; last_update = time }
-
-
-
+      Lwt.return { game with play_state = play_state; last_update = time }
 
   (** [loop game] is unit with the side effect of running a game loop for the
       game. *)
-  let rec loop (game:t) : unit =
+  let rec loop (game:t) : unit Lwt.t =
+    let%lwt () = Lwt_main.yield () in
+    let game = handle_state_events game in
     let inputs = match game.state with 
       | Playing -> game.game_inputs.event_driven
       | GameMenu -> game.menu_inputs
       | Gameover ->
-        game.menu_inputs
-      (* let tbl = Hashtbl.create 1 in
-         Hashtbl.add tbl Sdl.K.escape ((fun g -> { g with quit = true }), 
-         false); tbl *)
+        let tbl = Hashtbl.create 1 in
+        let quit = ((fun g -> { g with quit = true }), false) in
+        Hashtbl.add tbl Sdl.K.return quit;
+        Hashtbl.add tbl Sdl.K.escape quit;
+        tbl
       | GameoverHighscore -> Hashtbl.create 0
     in
     let game = handle_events inputs game in
     let time = Int32.to_int (Sdl.get_ticks ()) in
     let delta = (time - game.last_update) in
-    let game =
-      if delta < 1000 / 60 then game else
-        game_helper game delta time
-    in if game.quit then Audio.stop_music game.audio else loop game
+    let%lwt game = if delta < 1000 / 60
+      then Lwt.return game
+      else update game delta time in
+    if game.quit
+    then (Audio.stop_music game.audio; Lwt.return ())
+    else loop game
 
-
-
-  (** [gameover_loop game play_state] is the loop of game is a gameover is 
-      caught and a new game is started. *)
-  let rec gameover_loop game play_state =
-    try loop {
-        game with state = Gameover;
-                  play_state = play_state;
-      }
-    with S.Gameover play_state -> gameover_loop game play_state
-
-
-  let init (audio : Audio.t) (graphics : Graphics.t) (level : int)
+  let init (audio : Audio.t) (graphics : Graphics.t)
       (menu_controls : (Sdl.keycode * menu_input) list)
-      (game_controls : (Sdl.keycode * game_input) list) : unit =
+      (game_controls : (Sdl.keycode * game_input) list)
+      (play_state : S.t) : unit Lwt.t =
     Audio.loop_music audio;
     Random.self_init ();
     Audio.start_music audio;
@@ -239,7 +220,7 @@ module Make (S : State.S) = struct
     List.iter (game_inputs_press game_inputs) game_controls;
     let game = {
       state = Playing;
-      play_state = S.init 10 20 level;
+      play_state = play_state;
       last_update = Int32.to_int (Sdl.get_ticks ());
       menu_inputs = menu_inputs;
       game_inputs = game_inputs;
@@ -249,7 +230,5 @@ module Make (S : State.S) = struct
       konami = 0;
       quit = false;
     } in
-    try loop game
-    with S.Gameover play_state -> 
-      gameover_loop game play_state
+    loop game
 end

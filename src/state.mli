@@ -4,7 +4,7 @@ type event =
   | Locking
   | Movement
   | LineClear
-  | EndGame
+  | Endgame
 
 (** The representation of an RGB color. *)
 type color = int * int * int
@@ -21,14 +21,8 @@ module type S = sig
   (** The representation of a Tetris gamestate. *)
   type t
 
-  exception Gameover of t
-
   (** [pauseable] is whether this state is pauseable. *)
   val pauseable : bool
-
-  (** [init width height level] is the initialized state of the game with
-      playfield of size [width] by [height] starting at [level]. *)
-  val init : int -> int -> int -> t
 
   (** [score state] is the score of [state]. *)
   val score : t -> int
@@ -59,7 +53,7 @@ module type S = sig
   (** [update state delta soft_drop] is the state of [state] after [delta]
       amount of time in milliseconds. [soft_drop] indicates if soft drop is
       active. *)
-  val update : t -> int -> bool -> t
+  val update : t -> int -> bool -> t Lwt.t
 
   (** [rotate rotation state] is [state] with an attempt to rotate the falling
       piece in [rotation]. *)
@@ -76,14 +70,17 @@ module type S = sig
       at the base level. *)
   val hard_drop : t -> t
 
-  (** [handle_events f state] is the state after applying [f] to each event in 
-      the queue of events in [state] *)
-  val handle_events : (event -> unit) -> t -> t
+  (** [handle_events state] is the state with an empty event list coupled with
+      the events it used to have. *)
+  val handle_events : t -> t * event list
 end
 
 (** A module that represents a local state. *)
 module Local : S
 
+(** [create_state width height level] is the initialized state of the game with
+    playfield of size [width] by [height] starting at [level]. *)
+val create_state : int -> int -> int -> Local.t
 
 (** [make_test_state scoret linest levelt fall_speedt step_deltat 
     ext_placement_move_countt ext_placement_deltat min_rowt eventst queuet 

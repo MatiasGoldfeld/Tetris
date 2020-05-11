@@ -3,7 +3,7 @@ open Tsdl_mixer
 
 type t = {
   music: Mixer.music;
-  sound_effects : (State.event*Mixer.chunk) list;
+  sound_effects : (State.event * Mixer.chunk) list;
 }
 
 (** [unpack message result] is [value] if [result] is [Ok value]. Otherwise, it
@@ -24,13 +24,21 @@ let init (path:string) : t =
     music = Mixer.load_mus (path ^ "background.wav")
             |> unpack "Failed to load music";
     sound_effects = [
-      (Locking, load "selection.wav")
+      (Locking, load "lock.wav");
+      (LineClear, load "clear.wav");
+      (* Rotate and movement don't sound too good *)
+      (* (Rotate, load "rotate.wav");
+         (Movement, load "move.wav"); *)
+      (Endgame, load "gameover.wav");
     ];
   }
 
 let play_sound (audio:t) (event:State.event) : unit =
-  Mixer.play_channel (-1)  (List.assoc event audio.sound_effects) 1
-  |> unpack "Failed to play sound" |> ignore
+  match List.assoc_opt event audio.sound_effects with
+  | Some effect ->
+    Mixer.play_channel (-1) effect 0
+    |> unpack "Failed to play sound" |> ignore
+  | None -> ()
 
 let adjust_music (audio:t) (volume:float) : unit =
   volume *. (Int.to_float Mixer.max_volume)
@@ -53,6 +61,6 @@ let loop_music audio =
   then ()
   else start_music audio
 
-(** [quit audio] is unit with byproduct of quitting the mixer. *)
-let quit (audio:t) : unit=
+(** [quit audio] quits the SDL mixer. *)
+let quit (audio:t) : unit =
   Mixer.quit ()
