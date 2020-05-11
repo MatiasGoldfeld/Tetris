@@ -221,13 +221,13 @@ end
 (** [render_checkbox_button ctx menu (x, y) (w, h) label selected] renders
     the checkbox button. *)
 let render_checkbox_button ctx menu (x, y) (w, h) label selected = begin
-  let border_color = (0,0,0) in
-  let button_color = (255,255,255) in
-  render_button ctx x y w h 2 border_color button_color selected;
-  let bg = Sdl.Color.create 100 100 100 255 in
-  let fg = Sdl.Color.create 200 200 200 255 in
-  draw_text ctx 18 label bg fg (x+(w*2),(y-9));
   if Menu_state.is_multiplayer menu then begin
+    let border_color = (0,0,0) in
+    let button_color = (255,255,255) in
+    render_button ctx x y w h 2 border_color button_color selected;
+    let bg = Sdl.Color.create 100 100 100 255 in
+    let fg = Sdl.Color.create 200 200 200 255 in
+    draw_text ctx 18 label bg fg (x+(w*2),(y-9));
     if label = "Multiplayer" then begin
       draw_text ctx 16 "X" bg fg (x,y);
       (M.get_button menu label |> M.update_button (x,y) (w,h), 30)
@@ -241,8 +241,16 @@ let render_checkbox_button ctx menu (x, y) (w, h) label selected = begin
     else 
       (M.get_button menu label |> M.update_button (x,y) (w,h), 80)
   end
-  else
+  else if label <> "Host game?" then  begin
+    let border_color = (0,0,0) in
+    let button_color = (255,255,255) in
+    render_button ctx x y w h 2 border_color button_color selected;
+    let bg = Sdl.Color.create 100 100 100 255 in
+    let fg = Sdl.Color.create 200 200 200 255 in
+    draw_text ctx 18 label bg fg (x+(w*2),(y-9));
     (M.get_button menu label |> M.update_button (x,y) (w,h), 30)
+  end
+  else (M.get_button menu label, 0)
 end
 
 
@@ -270,15 +278,17 @@ let render_buttons (ctx:t) (menu:M.t) (coords:int*int) : M.t =
   let height = ref y in
   let menu_r = ref menu in 
   let updated_buttons = List.mapi (fun i (label, button) -> 
-      let (b, h) = rendered_button ctx button height (x+x_offset,y) menu_r label
-      in height := !height + h; b
+      if label = "Go Back" then (label, button)
+      else
+        let (b, h) = rendered_button ctx button height (x+x_offset,y) menu_r label
+        in height := !height + (h+20); b
     ) buttons in begin
     Sdl.render_present ctx.renderer;
     menu_r := M.update_buttons !menu_r updated_buttons;
   end;
   !menu_r
 
-let render_scores ctx (scores: Highscores.t list) = begin
+let render_scores ctx menu (scores: Highscores.t list) = begin
   List.iteri (fun i (score, username) ->
       let bg = Sdl.Color.create 100 100 100 255 in
       let fg = Sdl.Color.create 200 200 200 255 in
@@ -300,8 +310,10 @@ let render_menu (ctx:t) (menu:M.t) : M.t = begin
   fill_rect rect ctx;
   render_title ctx "DUCKTRIS" x y;
   if Menu_state.leaderboard_mode menu then begin
+    render_action_button ctx menu
+      (100, 200) (100, 40) "Go Back" false;
     let scores = Highscores.high_score_getter () in
-    render_scores ctx scores; menu
+    render_scores ctx menu scores; menu
   end 
   else begin
     render_field ctx menu (300,300) (200,30) "Username";

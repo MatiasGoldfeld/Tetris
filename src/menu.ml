@@ -56,7 +56,8 @@ let rec handle_events (menu : t) : t =
         let key = (Sdl.Event.(get event keyboard_keycode)) in begin
           if key = Sdl.K.backspace then
             let text = 
-              Menu_state.selected_text_field menu.menu  |> Menu_state.text menu.menu
+              Menu_state.selected_text_field menu.menu  
+              |> Menu_state.text menu.menu
             in
             let text_length = String.length text in
             if text <> "" then 

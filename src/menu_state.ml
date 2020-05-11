@@ -122,19 +122,25 @@ let selected_text_field menu =
   menu.selected_text_field
 
 let mouse_clicked menu click_coords =
-  let selected_text_field = List.fold_left
-      (fun selected (label, (field:m_field)) ->
-         if in_input (field.coords) (field.dimensions) click_coords 
-         then label
-         else selected
-      ) menu.selected_text_field menu.text_fields in
-  let updated_menu = 
-    List.fold_left (fun  menu (label, button) ->
-        if in_input (button.coords) (button.dimensions) click_coords 
-        then button.on_click menu
-        else menu
-      ) menu menu.buttons
-  in { updated_menu with selected_text_field = selected_text_field}
+  if menu.leaderboard_mode = false then 
+    let selected_text_field = List.fold_left
+        (fun selected (label, (field:m_field)) ->
+           if in_input (field.coords) (field.dimensions) click_coords 
+           then label
+           else selected
+        ) menu.selected_text_field menu.text_fields in
+    let updated_menu = 
+      List.fold_left (fun  menu (label, button) ->
+          if in_input (button.coords) (button.dimensions) click_coords 
+          then button.on_click menu
+          else menu
+        ) menu menu.buttons
+    in { updated_menu with selected_text_field = selected_text_field}
+  else
+    let b = get_button menu "Go Back" in
+    if in_input (100,200) (100,40) click_coords then
+      { menu with leaderboard_mode = false}
+    else menu
 
 let toggle_leaderboard menu =
   {menu with leaderboard_mode = true}
