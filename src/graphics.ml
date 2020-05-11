@@ -204,8 +204,6 @@ let render_field ctx menu (x,y) (w,h) label = begin
   end
 end
 
-
-
 let render_action_button ctx menu (x, y) (w, h) (label:string) selected = begin
   let border_color = (68,53,91) in
   let button_color = (68,53,91) in
@@ -223,23 +221,22 @@ let render_checkbox_button ctx menu (x, y) (w, h) (label:string) selected = begi
   let bg = Sdl.Color.create 100 100 100 255 in
   let fg = Sdl.Color.create 200 200 200 255 in
   draw_text ctx 18 label bg fg (x+(w*2),(y-9));
-  let height_diff = begin
-    if Menu_state.is_multiplayer menu then begin
-      if label = "Multiplayer" then begin
-        draw_text ctx 16 "X" bg fg (x,y);
-        30
-      end
-      else if label = "Host game?"  then begin
-        if Menu_state.is_host menu then
-          draw_text ctx 16 "X" bg fg (x,y);
-        render_field ctx menu (300,420) (200,30) "Address";
-        80
-      end
-      else 80
+  if Menu_state.is_multiplayer menu then begin
+    if label = "Multiplayer" then begin
+      draw_text ctx 16 "X" bg fg (x,y);
+      (M.get_button menu label |> M.update_button (x,y) (w,h), 30)
     end
-    else 30
+    else if label = "Host game?"  then begin
+      if Menu_state.is_host menu then
+        draw_text ctx 16 "X" bg fg (x,y);
+      render_field ctx menu (300,420) (200,30) "Address";
+      (M.get_button menu label |> M.update_button (x,y) (w,h), 80)
+    end
+    else 
+      (M.get_button menu label |> M.update_button (x,y) (w,h), 80)
   end
-  in (M.get_button menu label |> M.update_button (x,y) (w,h), height_diff)
+  else
+    (M.get_button menu label |> M.update_button (x,y) (w,h), 30)
 end
 
 
