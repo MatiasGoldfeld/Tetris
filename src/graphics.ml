@@ -440,9 +440,8 @@ module MakeGameRenderer (S : State.S) = struct
         draw_tetromino ctx piece 0 (x + size * 2) (y + size * 2) size
     end;
     draw_text ctx size t_score fg bg (x + x_offset, y + y_offset);
-    draw_text ctx size t_time  fg bg (x + x_offset, y + y_offset + size * 2);
-    draw_text ctx size t_lines fg bg (x + x_offset, y + y_offset + size * 4);
-    draw_text ctx size t_level fg bg (x + x_offset, y + y_offset + size * 6)
+    draw_text ctx size t_lines fg bg (x + x_offset, y + y_offset + size * 2);
+    draw_text ctx size t_level fg bg (x + x_offset, y + y_offset + size * 4)
 
   let render (ctx:t) (states:S.t list) (menu:(string * bool) list) : unit =
     let state = List.hd states in
