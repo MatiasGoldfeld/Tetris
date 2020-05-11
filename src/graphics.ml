@@ -245,6 +245,7 @@ let render_checkbox_button ctx menu (x, y) (w, h) label selected = begin
     (M.get_button menu label |> M.update_button (x,y) (w,h), 30)
 end
 
+
 let rendered_button ctx button height (x,y) menu_r label= 
   let updated_button_info = begin
     match Menu_state.b_type button with 
@@ -277,33 +278,37 @@ let render_buttons (ctx:t) (menu:M.t) (coords:int*int) : M.t =
   end;
   !menu_r
 
-let render_scores ctx (scores: Highscores.t list) =
+let render_scores ctx (scores: Highscores.t list) = begin
   List.iteri (fun i (score, username) ->
       let bg = Sdl.Color.create 100 100 100 255 in
       let fg = Sdl.Color.create 200 200 200 255 in
-      draw_text ctx 18 username bg fg (50,40*i);
-      draw_text ctx 18 username bg fg (150,40*i);
-    ) scores
+      draw_text ctx 18 username bg fg (200,300 + 40*i);
+      draw_text ctx 18 (string_of_int score) bg fg (300,300 + 40*i);
+    ) scores;
+  Sdl.render_present ctx.renderer;
+end
 
 let render_menu (ctx:t) (menu:M.t) : M.t = begin
-  if Menu_state.leaderboard_mode menu then
+  set_color (178, 249, 255) ctx; 
+  Sdl.render_clear ctx.renderer |> unpack "Failed to clear renderer";
+  let (w,h) = Sdl.get_window_size ctx.window in
+  let menu_w = w/2 in
+  let menu_h = h/2 in
+  let x = menu_w/2 in
+  let y = menu_h/2 in
+  let rect = Sdl.Rect.create x y menu_w menu_h in
+  fill_rect rect ctx;
+  render_title ctx "DUCKTRIS" x y;
+  if Menu_state.leaderboard_mode menu then begin
     let scores = Highscores.high_score_getter () in
     render_scores ctx scores; menu
+  end 
   else begin
-    set_color (178, 249, 255) ctx; 
-    Sdl.render_clear ctx.renderer |> unpack "Failed to clear renderer";
-    let (w,h) = Sdl.get_window_size ctx.window in
-    let menu_w = w/2 in
-    let menu_h = h/2 in
-    let x = menu_w/2 in
-    let y = menu_h/2 in
-    let rect = Sdl.Rect.create x y menu_w menu_h in
-    fill_rect rect ctx;
-    render_title ctx "DUCKTRIS" x y;
     render_field ctx menu (300,300) (200,30) "Username";
     render_buttons ctx menu (x,y+150)
   end
 end
+
 
 (** [menu_maker ctx items pos] renders a menu consisting of [items], where
     the strings are the names and the booleans are if they're higlighted, at
