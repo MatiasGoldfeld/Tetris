@@ -48,8 +48,20 @@ val toggle_multiplayer : t -> t
 
 val is_multiplayer : t -> bool
 
+val toggle_host : t -> t
+
+val is_host : t -> bool
+
 val b_type : button -> string
 
 val should_start_game : t -> bool
 
 val set_start_game : t -> bool -> t
+
+val adjust_music : t -> float -> t
+
+val volume : t -> float
+
+val update_address : t -> string -> t
+
+val address : t -> string

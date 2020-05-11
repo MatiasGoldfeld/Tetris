@@ -4,7 +4,7 @@ type event =
   | Locking
   | Movement
   | LineClear
-  | EndGame
+  | Endgame
 
 (** The representation of an RGB color. *)
 type color = int * int * int
@@ -20,8 +20,6 @@ type v =
 module type S = sig
   (** The representation of a Tetris gamestate. *)
   type t
-
-  exception Gameover of t
 
   (** [pauseable] is whether this state is pauseable. *)
   val pauseable : bool
@@ -72,9 +70,9 @@ module type S = sig
       at the base level. *)
   val hard_drop : t -> t
 
-  (** [handle_events f state] is the state after applying [f] to each event in 
-      the queue of events in [state] *)
-  val handle_events : (event -> unit) -> t -> t
+  (** [handle_events state] is the state with an empty event list coupled with
+      the events it used to have. *)
+  val handle_events : t -> t * event list
 end
 
 (** A module that represents a local state. *)

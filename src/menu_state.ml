@@ -10,6 +10,8 @@ type m_field = {
 type t = {
   start_game: bool;
   multiplayer: bool;
+  address: string;
+  is_host: bool;
   buttons: (string*button) list;
   multiplayer_fields: (string*m_field) list;
   volume: float;
@@ -48,6 +50,11 @@ let b_type button =
 
 let toggle_multiplayer menu = {menu with multiplayer = not menu.multiplayer}
 
+(* TODO: validate address *)
+let update_address menu address = {menu with address = address}
+
+let address menu = menu.address
+
 let make_button (coords:int*int) (dimensions:int*int) b_type on_click =
   {
     on_click = on_click;
@@ -84,6 +91,14 @@ let in_button button click_coords : bool =
 
 let is_multiplayer menu = menu.multiplayer
 
+let is_host menu = menu.is_host
+
+let toggle_host menu = {menu with is_host = not menu.is_host}
+
+let adjust_music menu delta = {menu with volume = menu.volume +. delta}
+
+let volume menu = menu.volume
+
 let button_selected menu label =
   let button = List.assoc label menu.buttons in
   button.selected
@@ -100,6 +115,8 @@ let init labels =
   {
     start_game = false;
     multiplayer = false;
+    address = "";
+    is_host = false;
     buttons = List.map 
         (fun (label, b_type, on_click) -> 
            (label, make_button (0,0) (0,0) b_type on_click))

@@ -21,8 +21,6 @@ module Client = struct
     out_channel : Lwt_io.output Lwt_io.channel;
   }
 
-  exception Gameover of t
-
   (** [new_state ()] is a new game state. *)
   let new_state () = State.create_state 10 20 1
 
@@ -94,9 +92,10 @@ module Client = struct
   let move (dir : [`Left | `Right]) : t -> t = wrap (Move dir)
   let hold : t -> t = wrap Hold
   let hard_drop : t -> t = wrap HardDrop
-  let handle_events (f : State.event -> unit) (client : t) : t  =
-    client.local := (S.handle_events f !(client.local));
-    client
+  let handle_events (client : t) : t * State.event list =
+    let local, events = S.handle_events !(client.local) in
+    client.local := local;
+    client, events
 end
 
 module Server = struct
@@ -118,8 +117,6 @@ module Server = struct
     player_states : (Lwt_unix.sockaddr, S.t Lwt.t) Hashtbl.t;
     out_channels : (Lwt_unix.sockaddr, Lwt_io.output Lwt_io.channel) Hashtbl.t;
   }
-
-  exception Gameover of t
 
   (** [new_state ()] is a new game state. *)
   let new_state () = State.create_state 10 20 1
@@ -267,8 +264,9 @@ module Server = struct
   let move (dir : [`Left | `Right]) : t -> t = wrap (S.move dir)
   let hold : t -> t = wrap S.hold
   let hard_drop : t -> t = start_trigger S.hard_drop
-  let handle_events (f : State.event -> unit) : t -> t =
-    wrap (S.handle_events f)
+  let handle_events (server : t) : t * State.event list =
+    let local, events = S.handle_events server.local in
+    { server with local = local }, events
 end
 
 let create_client : string -> Lwt_unix.sockaddr -> Client.t =

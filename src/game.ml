@@ -66,16 +66,16 @@ module Make (S : State.S) = struct
       (k, i:Sdl.keycode * menu_input) : unit =
     let add = Hashtbl.add inputs k in
     match i with
-    | MMenu  -> add ((fun x -> {x with state = Playing}), false)
+    | MMenu  -> add ((fun g -> { g with state = Playing }), false)
     | MLeft  -> ()
     | MRight -> ()
     | MUp    ->
       add ((fun x -> {x with gmenu_pos = max 0 (x.gmenu_pos - 1)}), true)
     | MDown  ->
       add ((fun x -> {x with gmenu_pos = min 1 (x.gmenu_pos + 1)}), true)
-    | MEnter -> add ((fun x -> match x.gmenu_pos with
-        | 0 -> { x with state = Playing }
-        | 1 -> { x with quit = true }
+    | MEnter -> add ((fun g -> match g.gmenu_pos with
+        | 0 -> { g with state = Playing }
+        | 1 -> { g with quit = true }
         | _ -> failwith "Invalid in-game menu position"
       ), false)
 
@@ -146,11 +146,23 @@ module Make (S : State.S) = struct
         | _ -> game
       end
 
+  let handle_state_events (game:t) : t =
+    let state, events = S.handle_events game.play_state in
+    let game_ref = ref { game with play_state = state } in
+    let handle_event = function
+      | State.Endgame -> game_ref := { !game_ref with state = Gameover }
+      | x -> Audio.play_sound game.audio x
+    in List.iter handle_event events;
+    !game_ref
+
   (** [update game delta time] is a game with all of the updated
       parts from a cycle for the game. *)
   let update game delta time : t Lwt.t = 
     match game.state with
-    | Gameover -> Lwt.return game
+    | Gameover -> 
+      let menu = [("Gameover", false); ("Quit", true)] in
+      GR.render game.graphics [game.play_state] menu;
+      Lwt.return game
     | GameoverHighscore -> Lwt.return game
     | Playing | GameMenu ->
       let soft_sc = Sdl.get_scancode_from_key game.game_inputs.soft_drop in
@@ -170,12 +182,15 @@ module Make (S : State.S) = struct
       game. *)
   let rec loop (game:t) : unit Lwt.t =
     let%lwt () = Lwt_main.yield () in
+    let game = handle_state_events game in
     let inputs = match game.state with 
       | Playing -> game.game_inputs.event_driven
       | GameMenu -> game.menu_inputs
       | Gameover ->
         let tbl = Hashtbl.create 1 in
-        Hashtbl.add tbl Sdl.K.escape ((fun g -> { g with quit = true }), false);
+        let quit = ((fun g -> { g with quit = true }), false) in
+        Hashtbl.add tbl Sdl.K.return quit;
+        Hashtbl.add tbl Sdl.K.escape quit;
         tbl
       | GameoverHighscore -> Hashtbl.create 0
     in
@@ -215,9 +230,5 @@ module Make (S : State.S) = struct
       konami = 0;
       quit = false;
     } in
-    try loop game
-    with S.Gameover play_state -> loop {
-        game with state = Gameover;
-                  play_state = play_state;
-      }
+    loop game
 end

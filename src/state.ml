@@ -6,7 +6,7 @@ type event =
   | Locking
   | Movement
   | LineClear
-  | EndGame
+  | Endgame
 
 type color = int * int * int
 
@@ -20,7 +20,6 @@ type v =
 
 module type S = sig
   type t
-  exception Gameover of t
   val pauseable : bool
   val score : t -> int
   val level : t -> int
@@ -35,7 +34,7 @@ module type S = sig
   val move : [`Left | `Right] -> t -> t
   val hold : t -> t
   val hard_drop : t -> t
-  val handle_events : (event -> unit) -> t -> t
+  val handle_events : t -> t * event list
 end
 
 module Local = struct
@@ -66,8 +65,6 @@ module Local = struct
        already placed on the playfield are represented here. *)
     playfield : color option array array
   }
-
-  exception Gameover of t
 
   let pauseable = true
 
@@ -144,8 +141,7 @@ module Local = struct
     in helper (start_row + 1)
 
   (** [drop_help state] is [state] with a new piece initialized as the 
-      falling piece on the top of the playfield.
-      Raises: Gameover if no piece can be initialized at the top. *)
+      falling piece on the top of the playfield. *)
   let drop_help state =
     let column = 5 - (Tetromino.size state.falling / 2) in
     let row = field_height state in
@@ -168,7 +164,7 @@ module Local = struct
          min_row = row - 1} |> update_ghost
       end
       else 
-        raise (Gameover {state with events = EndGame::state.events})
+        { state with events = Endgame::state.events }
     end
 
   (** [drop state] is [state] with a new piece initialized as the 
@@ -415,14 +411,12 @@ module Local = struct
           {state with held = Some state.falling; held_before = true} piece
 
   let hard_drop (state:t) : t =
+    let score = (state.score + 2*(state.ghost_row - snd state.falling_pos)) in
     place_piece 
-      {state with score = 
-                    (state.score + 2*(state.ghost_row - snd state.falling_pos))} 
-      (fst state.falling_pos) state.ghost_row
+      { state with score = score } (fst state.falling_pos) state.ghost_row
 
-  let handle_events (f:event -> unit) (state:t) : t =
-    List.iter f (List.rev state.events);
-    { state with events = [] }
+  let handle_events (state:t) : t * event list =
+    { state with events = [] }, state.events
 end
 
 let create_state (width:int) (height:int) (level:int) : Local.t =

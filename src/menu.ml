@@ -50,6 +50,24 @@ let rec handle_events (menu : t) : t =
         let click_coords = (Sdl.Event.(get event mouse_button_x), 
                             Sdl.Event.(get event mouse_button_y)) in 
         { menu with menu = Menu_state.mouse_clicked menu.menu click_coords }
+      | `Key_down -> 
+        let key = (Sdl.Event.(get event keyboard_keycode)) in begin
+          if key = Sdl.K.backspace then
+            let text = Menu_state.address menu.menu in
+            let text_length = String.length text in
+            if text <> "" then 
+              let updated_menu = String.sub text 0 (text_length-1) 
+                                 |> Menu_state.update_address menu.menu in
+              {menu with menu = updated_menu }
+            else menu
+          else menu
+        end
+      | `Text_input -> 
+        let text = Sdl.Event.(get event text_input_text) in
+        let address = Menu_state.address menu.menu in
+        let updated_menu = Menu_state.update_address (menu.menu) 
+            (address^text) in
+        {menu with menu = updated_menu}
       | `Quit ->
         Sdl.log "Quit event handled from main menu";
         Sdl.quit ();
@@ -57,10 +75,16 @@ let rec handle_events (menu : t) : t =
       | _ -> menu
     end
 
+let adjust_music menu delta =
+  let audio = menu.audio in
+  Audio.adjust_music audio delta
+
 (** [loop menu] runs the main menu loop, handling input and rendering the
     menu. *)
 let rec loop (menu : t) : unit Lwt.t =
   let%lwt () = Lwt_main.yield () in
+  let audio = menu.audio in
+  Menu_state.volume menu.menu |> Audio.adjust_music audio;
   let menu = handle_events menu in
   let time = Int32.to_int (Sdl.get_ticks ()) in
   let delta = (time - menu.last_update) in
