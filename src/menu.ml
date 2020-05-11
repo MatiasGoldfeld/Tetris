@@ -87,7 +87,7 @@ let adjust_music menu delta =
 let start_multiplayer_game (menu : t) : unit Lwt.t =
   match String.split_on_char ':' (Menu_state.address menu.menu) with
   | ip :: port :: [] ->
-    let username = "" in
+    let username = Menu_state.text menu.menu "Username" in
     let addr = Lwt_unix.ADDR_INET
         (Unix.inet_addr_of_string ip, int_of_string port) in
     if Menu_state.is_host menu.menu then

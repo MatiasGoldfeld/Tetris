@@ -64,12 +64,13 @@ module Client = struct
 
   let pauseable = false
 
-  let init _ _ _ =
-    failwith "Cannot init client state"
-
   let update (client : t) (delta : int) (soft_drop : bool) : t Lwt.t =
     let%lwt () = Lwt_main.yield () in
     Lwt.return client
+
+  let all_states (client : t) =
+    let f s = { client with local = ref s } in
+    client :: List.map f !(client.remote)
 
   (** [return f client] is [client]'s local state applied to [f]. *)
   let return (f : S.t -> 'a) (client : t) : 'a = f !(client.local)
@@ -96,6 +97,7 @@ module Client = struct
     let local, events = S.handle_events !(client.local) in
     client.local := local;
     client, events
+  let name (client : t) : string = ""
 end
 
 module Server = struct
@@ -184,9 +186,6 @@ module Server = struct
 
   let pauseable = false
 
-  let init _ _ _ =
-    failwith "Cannot init client state"
-
   (** [handle_commands server commands] handles all buffered incoming client
       [commands] in [server] *)
   let rec handle_commands (server : t) (commands : command_buffer) : unit =
@@ -236,6 +235,13 @@ module Server = struct
                  |> Lwt.join
     in Lwt.return server
 
+  let all_states (server : t) =
+    let f s = { server with local = s } in
+    let other_states = Hashtbl.to_seq server.player_states
+                       |> Seq.map (fun (_, x) -> f (Lwt_main.run x))
+                       |> List.of_seq
+    in server :: other_states
+
   (** [return f server] is [server]'s local state applied to [f]. *)
   let return (f : S.t -> 'a) (server : t) : 'a = f server.local
 
@@ -267,6 +273,7 @@ module Server = struct
   let handle_events (server : t) : t * State.event list =
     let local, events = S.handle_events server.local in
     { server with local = local }, events
+  let name (server : t) : string = ""
 end
 
 let create_client : string -> Lwt_unix.sockaddr -> Client.t =
