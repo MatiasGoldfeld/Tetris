@@ -6,3 +6,4 @@ PKG tsdl
 PKG tsdl_mixer
 PKG tsdl_ttf
 PKG tsdl_image
+PKG extlib
