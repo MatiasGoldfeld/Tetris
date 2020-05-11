@@ -10,14 +10,3 @@ val high_score_getter : unit -> t list
 (** [write_high_score highscore] writes [highscore] to a secret highscore file.
     If this file does not exist, it creates it and adds [highscore] to it. *)
 val write_high_score : t -> unit
-
-
-
-
-
-
-
-
-
-
-

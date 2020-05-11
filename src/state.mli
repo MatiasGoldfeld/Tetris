@@ -73,6 +73,15 @@ module type S = sig
   (** [handle_events state] is the state with an empty event list coupled with
       the events it used to have. *)
   val handle_events : t -> t * event list
+
+  (** [send_lines state lines_cleared] is state updated with lines sent. *)
+  val send_lines : t -> int -> t
+
+  (** [recieve_lines state received_lines] is [state] after receiving 
+      [received_lines] *)
+  val receive_lines : t -> int list -> t
+
+
 end
 
 (** A module that represents a local state. *)

@@ -63,7 +63,9 @@ module Local = struct
     (* The array of rows, with 0 representing the top row. The columns are
        arrays of color options, with 0 representing the left column. Only blocks
        already placed on the playfield are represented here. *)
-    playfield : color option array array
+    playfield : color option array array;
+    sender : int list;
+    receiver : int list
   }
 
   let pauseable = true
@@ -87,6 +89,32 @@ module Local = struct
 
   let lines (state:t) : int =
     state.lines
+
+
+  (** [tetris_lines state rand_spot lines_cleared] is the state with [rand_spot]
+      added to the sender list in [state] if [lines_cleared] is 4 *)
+  let tetris_lines state rand_spot lines_cleared =
+    if lines_cleared = 4
+    then {state with sender = 
+                       rand_spot::rand_spot::rand_spot::rand_spot::state.sender}
+    else state
+
+
+  let send_lines state lines_cleared =
+    let rand_spot = Random.int (field_width state - 1) in
+    if lines_cleared = 2 
+    then {state with sender = rand_spot::state.sender}
+    else begin
+      if lines_cleared = 3
+      then {state with sender = rand_spot::rand_spot::state.sender}
+      else tetris_lines state rand_spot lines_cleared
+    end
+
+
+
+  let receive_lines state received_lines = 
+    {state with receiver = received_lines@state.receiver}
+
 
   (** [legal state falling falling_rot falling_pos] is true if the anticipated
       movement [falling] [falling_rot] [falling_pos] is legal. *)
@@ -222,7 +250,8 @@ module Local = struct
     else
       let new_score = state.score + state.level*score_multipliers.(line_dif) in
       if line_dif > 0 
-      then {state with score = new_score; events = LineClear::state.events} 
+      then {(send_lines state line_dif) with score = new_score; 
+                                             events = LineClear::state.events} 
       else {state with score = new_score}
 
   (** [clear_lines state] is the state after clearing
@@ -283,6 +312,29 @@ module Local = struct
       | _ -> false
     end
 
+
+
+
+  (** [fill_up_rows state height] is unit with the byproduct of moving
+        all above rows down a row. *)
+  let rec fill_up_rows state height =
+    if height <= (field_state_height state - 1)
+    then (state.playfield.(height) <- state.playfield.(height + 1);
+          fill_up_rows state (height + 1))
+    else state.playfield.(height) <- Array.make (field_width state) 
+          (Some (153, 50, 204))
+
+
+  (** [deal_with_received_lines state] is [state] after accounting for any 
+      received lines *)
+  let rec deal_with_received_lines state = 
+    match state.receiver with
+    | [] -> state
+    | h::t -> fill_up_rows state 0;
+      state.playfield.(field_state_height state - 1).(h) <- None;
+      deal_with_received_lines state
+
+
   (** [place_piece state pos_x pos_y] is the state after placing the falling 
       piece in [state] in the positino of [pos_x] and [pos_y]. *)
   let place_piece state pos_x pos_y =
@@ -301,7 +353,7 @@ module Local = struct
       done
     done;
     let new_state = {spin_score_state with events = Locking::state.events} in
-    drop (clear_lines new_state)
+    drop ((clear_lines new_state) |> deal_with_received_lines)
 
   let queue (state:t) : Tetromino.t list =
     state.queue
@@ -417,6 +469,15 @@ module Local = struct
 
   let handle_events (state:t) : t * event list =
     { state with events = [] }, state.events
+
+
+
+
+
+
+
+
+
 end
 
 let create_state (width:int) (height:int) (level:int) : Local.t =
@@ -438,7 +499,9 @@ let create_state (width:int) (height:int) (level:int) : Local.t =
     falling_rot = -1;
     falling_pos = -1, -1;
     ghost_row = -1;
-    playfield = Array.make_matrix (2*height) width None
+    playfield = Array.make_matrix (2*height) width None;
+    sender = [];
+    receiver = [];
   }
 
 let make_test_state scoret linest levelt fall_speedt step_deltat 
@@ -462,5 +525,8 @@ let make_test_state scoret linest levelt fall_speedt step_deltat
     falling_rot = falling_rott;
     falling_pos = falling_post;
     ghost_row = ghost_rowt;
-    playfield = playfieldt
+    playfield = playfieldt;
+    sender = [];
+    receiver = [];
   }
+
