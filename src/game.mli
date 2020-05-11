@@ -26,11 +26,12 @@ module type S = sig
   (** The representation of a game. *)
   type t
 
-  (** [init audio graphics menu_controls game_controls state] begins the game
+  (** [init audio graphics menu_controls game_controls state username] 
+      begins the game
       starting at [state], using [audio] and [graphics] contexts. Uses Tsdl
       [menu_controls] and [game_controls]. *)
   val init : Audio.t -> Graphics.t -> (Sdl.keycode * menu_input) list ->
-    (Sdl.keycode * game_input) list -> S.t -> unit Lwt.t
+    (Sdl.keycode * game_input) list -> S.t -> string -> unit Lwt.t
 end
 
 (** The module that makes a state adherent to S. *)

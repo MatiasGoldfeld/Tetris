@@ -30,7 +30,7 @@ module type S = sig
   module S : State.S
   type t
   val init : Audio.t -> Graphics.t -> (Sdl.keycode * menu_input) list ->
-    (Sdl.keycode * game_input) list -> S.t -> unit Lwt.t
+    (Sdl.keycode * game_input) list -> S.t -> string -> unit Lwt.t
 end
 
 module Make (S : State.S) = struct
@@ -57,6 +57,7 @@ module Make (S : State.S) = struct
     gmenu_pos : int;
     konami : int;
     quit : bool;
+    username: string;
   }
 
   (** [menu_inputs_press inputs (k, i)] maps key [k] to
@@ -152,7 +153,7 @@ module Make (S : State.S) = struct
     let handle_event = function
       | State.Endgame -> begin
           let score = S.score state in
-          Highscores.write_high_score (score,"user123");
+          Highscores.write_high_score (score,game.username);
           game_ref := { !game_ref with state = Gameover }
         end
       | x -> Audio.play_sound game.audio x
@@ -211,7 +212,8 @@ module Make (S : State.S) = struct
   let init (audio : Audio.t) (graphics : Graphics.t)
       (menu_controls : (Sdl.keycode * menu_input) list)
       (game_controls : (Sdl.keycode * game_input) list)
-      (play_state : S.t) : unit Lwt.t =
+      (play_state : S.t)
+      (username: string) : unit Lwt.t =
     Audio.loop_music audio;
     Random.self_init ();
     Audio.start_music audio;
@@ -233,6 +235,7 @@ module Make (S : State.S) = struct
       gmenu_pos = 0;
       konami = 0;
       quit = false;
+      username = username;
     } in
     loop game
 end

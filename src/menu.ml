@@ -94,10 +94,12 @@ let start_multiplayer_game (menu : t) : unit Lwt.t =
             (Unix.inet_addr_of_string ip, int_of_string port) in
         if Menu_state.is_host menu.menu then
           let state = Remote.create_server username addr in
-          Server.init menu.audio menu.graphics menu_controls game_controls state
+          Server.init menu.audio menu.graphics menu_controls game_controls
+            state username
         else
           let state = Remote.create_client username addr in
-          Client.init menu.audio menu.graphics menu_controls game_controls state
+          Client.init menu.audio menu.graphics menu_controls game_controls 
+            state username
       end with _ -> Lwt.return ()
     end
   | _ -> Lwt.return ()
@@ -111,14 +113,15 @@ let rec loop (menu : t) : unit Lwt.t =
   let menu = handle_events menu in
   let time = Int32.to_int (Sdl.get_ticks ()) in
   let delta = (time - menu.last_update) in
+  let username = Menu_state.text menu.menu "Username" in
   let%lwt menu =
     if Menu_state.should_start_game menu.menu then 
       let%lwt () =
         if Menu_state.is_multiplayer menu.menu then
           start_multiplayer_game menu
         else
-          State.create_state 10 20 1
-          |> Local.init menu.audio menu.graphics menu_controls game_controls
+          Local.init menu.audio menu.graphics menu_controls 
+            game_controls (State.create_state 10 20 1) username
       in Lwt.return
         { menu with menu = Menu_state.set_start_game menu.menu false }
     else Lwt.return menu in
