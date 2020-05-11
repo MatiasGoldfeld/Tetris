@@ -15,7 +15,9 @@ module type Button = sig
   val coords : t -> (int*int)
 end
 
-module LocalGame = Game.Make (State.Local)
+module Local = Game.Make (State.Local)
+module Client = Game.Make (Remote.Client)
+module Server = Game.Make (Remote.Server)
 
 let menu_controls = [
   (Sdl.K.escape, Game.MMenu);
@@ -79,6 +81,20 @@ let adjust_music menu delta =
   let audio = menu.audio in
   Audio.adjust_music audio delta
 
+let start_multiplayer_game (menu : t) : unit Lwt.t =
+  match String.split_on_char ':' (Menu_state.address menu.menu) with
+  | ip :: port :: [] ->
+    let username = "" in
+    let addr = Lwt_unix.ADDR_INET
+        (Unix.inet_addr_of_string ip, int_of_string port) in
+    if Menu_state.is_host menu.menu then
+      let state = Remote.create_server username addr in
+      Server.init menu.audio menu.graphics menu_controls game_controls state
+    else
+      let state = Remote.create_client username addr in
+      Client.init menu.audio menu.graphics menu_controls game_controls state
+  | _ -> Lwt.return ()
+
 (** [loop menu] runs the main menu loop, handling input and rendering the
     menu. *)
 let rec loop (menu : t) : unit Lwt.t =
@@ -92,10 +108,10 @@ let rec loop (menu : t) : unit Lwt.t =
     if Menu_state.should_start_game menu.menu then 
       let%lwt () =
         if Menu_state.is_multiplayer menu.menu then
-          Lwt.return ()
+          start_multiplayer_game menu
         else
           State.create_state 10 20 1
-          |> LocalGame.init menu.audio menu.graphics menu_controls game_controls
+          |> Local.init menu.audio menu.graphics menu_controls game_controls
       in Lwt.return
         { menu with menu = Menu_state.set_start_game menu.menu false }
     else Lwt.return menu in
