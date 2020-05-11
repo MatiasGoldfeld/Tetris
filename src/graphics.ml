@@ -145,8 +145,8 @@ let draw_text (ctx:t) (size:int) (text:string) (fg:Sdl.color) (bg:Sdl.color)
 (** [render_title ctx title x y] is unit with byproduct of rendering the title
     [title] with [ctx] positioned according to [x] and [y]. *)
 let render_title (ctx:t) (title: string) (x:int) (y:int) = begin
-  let bg = Sdl.Color.create 100 100 100 0 in
-  let fg = Sdl.Color.create 200 200 200 0 in
+  let bg = Sdl.Color.create 178 249 255 255 in
+  let fg = Sdl.Color.create 94 140 97 255 in
   let w_desire, h_desire = 24, 20 in
   let w_true, h_true = Sdl.get_window_size ctx.window in
   let size = min (w_true / w_desire) (h_true / h_desire) in
@@ -199,9 +199,9 @@ let render_field ctx menu (x,y) (w,h) label = begin
     fill_rect rect ctx;
     let text = Menu_state.text menu label in 
     if text <> "" then
-      let bg = Sdl.Color.create 100 100 100 255 in
+      let bg = Sdl.Color.create 255 255 255 255 in
       let fg = Sdl.Color.create 200 200 200 255 in
-      draw_text ctx 18 text bg fg (x,y);
+      draw_text ctx 18 text fg bg (x,y);
       Sdl.start_text_input();
   end
 end
@@ -212,9 +212,9 @@ let render_action_button ctx menu (x, y) (w, h) label selected = begin
   let border_color = (68,53,91) in
   let button_color = (68,53,91) in
   render_button ctx x y w h 2 border_color button_color selected;
-  let bg = Sdl.Color.create 100 100 100 255 in
+  let bg = Sdl.Color.create 68 53 91 255 in
   let fg = Sdl.Color.create 200 200 200 255 in
-  draw_text ctx 18 label bg fg (x,(y));
+  draw_text ctx 18 label fg bg (x,(y));
   (M.get_button menu label |> M.update_button (x,y) (w,h), 30)
 end
 
