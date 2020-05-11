@@ -35,6 +35,8 @@ module type S = sig
   val hold : t -> t
   val hard_drop : t -> t
   val handle_events : t -> t * event list
+  val name : t -> string
+  val all_states : t -> t list
 end
 
 module Local = struct
@@ -417,6 +419,10 @@ module Local = struct
 
   let handle_events (state:t) : t * event list =
     { state with events = [] }, state.events
+
+  let name (state:t) : string = ""
+
+  let all_states (state:t) = [state]
 end
 
 let create_state (width:int) (height:int) (level:int) : Local.t =

@@ -73,6 +73,13 @@ module type S = sig
   (** [handle_events state] is the state with an empty event list coupled with
       the events it used to have. *)
   val handle_events : t -> t * event list
+
+  (** [name state] is the name of [state]. *)
+  val name : t -> string
+
+  (** [all_states state] is all of the states in [state] which must be
+      rendered. *)
+  val all_states : t -> t list
 end
 
 (** A module that represents a local state. *)
