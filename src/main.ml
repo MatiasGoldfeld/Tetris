@@ -54,8 +54,9 @@ let main : unit Lwt.t =
           (fun m -> Menu_state.adjust_music m 0.1));
          ("Decrease Volume (by 10%)", "action",
           (fun m -> Menu_state.adjust_music m (-0.1)));
-         ("Start", "action", (fun m -> print_endline "start"; 
-                               Menu_state.set_start_game m true))] in
+         ("Start", "action", (fun m -> Menu_state.set_start_game m true));
+         ("View Leaderboard", "action", 
+          (fun m -> Menu_state.toggle_leaderboard m))] in
     Sdl.quit ();
     exit 0
 

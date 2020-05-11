@@ -44,28 +44,56 @@ val button_selected : t -> string -> bool
 (** [init buttons] initializes a menu with buttons. *)
 val init : (string * string * (t->t)) list -> t
 
+(** [toggle_multiplayer menu] toggles the game's menu, [menu], 
+    to multiplayer mode. *)
 val toggle_multiplayer : t -> t
 
+(** [is_multiplayer menu] is true if multiplayer mode is selected
+    in [menu] and false otherwise. *)
 val is_multiplayer : t -> bool
 
+(** [toggle_host menu] toggles the game's menu, [menu], for the current 
+    user to be the host. *)
 val toggle_host : t -> t
 
+(** [is_host menu] is true if the player is hosting in this [menu]. *)
 val is_host : t -> bool
 
+(** [b_type button] is the string representation of [button] *)
 val b_type : button -> string
 
+(** [should_start_game menu] is true if the game menu has been given
+    valid inputs and a game can be started. *)
 val should_start_game : t -> bool
 
+(** [set_start_game menu value] sets [menu]'s start_game to [value] *)
 val set_start_game : t -> bool -> t
 
+(** [adjust_music menu delta] is [menu] with the music's volume changed by
+    [delta]. *)
 val adjust_music : t -> float -> t
 
+(** [volume menu] is the volume of music playing in [menu]. *)
 val volume : t -> float
 
+(** [update_text menu label] is the [menu] with text in the [label] 
+    text input field updated. *)
 val update_text : t -> string -> t
 
+(** [address menu] is the ip address and port of the game. *)
 val address : t -> string
 
+(** [text menu label] is the text in the [label] text input field
+    if [menu]. *)
 val text : t -> string -> string 
 
+(** [selected_text_field menu] is the label of the text field currently 
+    selected in the menu. *)
 val selected_text_field : t -> string
+
+(** [toggle_leaderboard menu] is [menu] with leaderboard_mode toggled. *)
+val toggle_leaderboard : t -> t
+
+(** [leader_board mode menu] is true if the menu is set to display the
+    leaderboard and false otherwise. *)
+val leaderboard_mode : t -> bool

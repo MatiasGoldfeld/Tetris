@@ -1,5 +1,5 @@
 (** The representation of a highscore of a user. *)
-type t
+type t = (int*string)
 
 (** [high_score_getter unit] is the type t list of high scores from a secret 
     highscore file. If this file does not exist, it creates it and returns an 

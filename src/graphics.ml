@@ -181,6 +181,9 @@ end
 module M = Menu_state
 
 let render_field ctx menu (x,y) (w,h) label = begin
+  let bg = Sdl.Color.create 100 100 100 255 in
+  let fg = Sdl.Color.create 200 200 200 255 in
+  draw_text ctx 18 label bg fg (x,y);
   if Menu_state.selected_text_field menu = label then begin
     set_color (0, 0, 0) ctx; 
     let border = 5 in
@@ -202,22 +205,6 @@ let render_field ctx menu (x,y) (w,h) label = begin
 end
 
 
-let render_fields (ctx:t) (menu:M.t) coords dimensions = begin
-  set_color (255, 255, 255) ctx; 
-  let (x,y) = coords in
-  let (w,h) = dimensions in
-  let rect = Sdl.Rect.create x y w h in begin
-    Sdl.set_text_input_rect (Some rect);
-    fill_rect rect ctx;
-    let address = Menu_state.address menu in 
-    if address <> "" then begin
-      let bg = Sdl.Color.create 100 100 100 255 in
-      let fg = Sdl.Color.create 200 200 200 255 in
-      draw_text ctx 18 address bg fg (x,y)
-    end;
-    Sdl.start_text_input();
-  end
-end
 
 let render_action_button ctx menu (x, y) (w, h) (label:string) selected = begin
   let border_color = (68,53,91) in
@@ -236,23 +223,25 @@ let render_checkbox_button ctx menu (x, y) (w, h) (label:string) selected = begi
   let bg = Sdl.Color.create 100 100 100 255 in
   let fg = Sdl.Color.create 200 200 200 255 in
   draw_text ctx 18 label bg fg (x+(w*2),(y-9));
-  if Menu_state.is_multiplayer menu then begin
-    if label = "Multiplayer" then begin
-      draw_text ctx 16 "X" bg fg (x,y);
-      (M.get_button menu label |> M.update_button (x,y) (w,h), 30)
-    end
-    else if label = "Host game?"  then begin
-      if Menu_state.is_host menu then
+  let height_diff = begin
+    if Menu_state.is_multiplayer menu then begin
+      if label = "Multiplayer" then begin
         draw_text ctx 16 "X" bg fg (x,y);
-      render_field ctx menu (300,420) (200,30) "Address";
-      (M.get_button menu label |> M.update_button (x,y) (w,h), 80)
+        30
+      end
+      else if label = "Host game?"  then begin
+        if Menu_state.is_host menu then
+          draw_text ctx 16 "X" bg fg (x,y);
+        render_field ctx menu (300,420) (200,30) "Address";
+        80
+      end
+      else 80
     end
-    else 
-      (M.get_button menu label |> M.update_button (x,y) (w,h), 80)
+    else 30
   end
-  else
-    (M.get_button menu label |> M.update_button (x,y) (w,h), 30)
+  in (M.get_button menu label |> M.update_button (x,y) (w,h), height_diff)
 end
+
 
 let rendered_button ctx button height (x,y) menu_r label= 
   let updated_button_info = begin
@@ -286,19 +275,32 @@ let render_buttons (ctx:t) (menu:M.t) (coords:int*int) : M.t =
   end;
   !menu_r
 
+let render_scores ctx (scores: Highscores.t list) =
+  List.iteri (fun i (score, username) ->
+      let bg = Sdl.Color.create 100 100 100 255 in
+      let fg = Sdl.Color.create 200 200 200 255 in
+      draw_text ctx 18 username bg fg (50,40*i);
+      draw_text ctx 18 username bg fg (150,40*i);
+    ) scores
+
 let render_menu (ctx:t) (menu:M.t) : M.t = begin
-  set_color (178, 249, 255) ctx; 
-  Sdl.render_clear ctx.renderer |> unpack "Failed to clear renderer";
-  let (w,h) = Sdl.get_window_size ctx.window in
-  let menu_w = w/2 in
-  let menu_h = h/2 in
-  let x = menu_w/2 in
-  let y = menu_h/2 in
-  let rect = Sdl.Rect.create x y menu_w menu_h in
-  fill_rect rect ctx;
-  render_title ctx "DUCKTRIS" x y;
-  render_field ctx menu (300,300) (200,30) "Username";
-  render_buttons ctx menu (x,y+150)
+  if Menu_state.leaderboard_mode menu then
+    let scores = Highscores.high_score_getter () in
+    render_scores ctx scores; menu
+  else begin
+    set_color (178, 249, 255) ctx; 
+    Sdl.render_clear ctx.renderer |> unpack "Failed to clear renderer";
+    let (w,h) = Sdl.get_window_size ctx.window in
+    let menu_w = w/2 in
+    let menu_h = h/2 in
+    let x = menu_w/2 in
+    let y = menu_h/2 in
+    let rect = Sdl.Rect.create x y menu_w menu_h in
+    fill_rect rect ctx;
+    render_title ctx "DUCKTRIS" x y;
+    render_field ctx menu (300,300) (200,30) "Username";
+    render_buttons ctx menu (x,y+150)
+  end
 end
 
 (** [menu_maker ctx items pos] renders a menu consisting of [items], where

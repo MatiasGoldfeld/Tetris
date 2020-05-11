@@ -8,6 +8,7 @@ type m_field = {
 }
 
 type t = {
+  leaderboard_mode: bool;
   username: string;
   start_game: bool;
   multiplayer: bool;
@@ -83,19 +84,7 @@ let update_buttons menu buttons =
   }
 
 let set_start_game menu value = 
-  let start_game = begin
-    let regex = Str.regexp 
-        "\\b(25[0-5]\\|2[0-4][0-9]\\|1[0-9][0-9]\\|[1-9]?[0-9])\\.
-        (25[0-5]\\|2[0-4][0-9]\\|1[0-9][0-9]\\|[1-9]?[0-9])\\.
-        (25[0-5]\\|2[0-4][0-9]\\|1[0-9][0-9]\\|[1-9]?[0-9])\\.
-        (25[0-5]\\|2[0-4][0-9]\\|1[0-9][0-9]\\|[1-9]?[0-9])\\b
-        :[1-9]\\|[1-9][0-9]\\|[1-9][0-9][0-9]\\|[1-9][0-9][0-9][0-9]" 
-    in
-    if Str.string_match regex menu.address 0 
-    then value
-    else false
-  end in
-  {menu with start_game = start_game && value}
+  {menu with start_game = value}
 
 let should_start_game menu = 
   menu.start_game
@@ -147,6 +136,11 @@ let mouse_clicked menu click_coords =
       ) menu menu.buttons
   in { updated_menu with selected_text_field = selected_text_field}
 
+let toggle_leaderboard menu =
+  {menu with leaderboard_mode = true}
+
+let leaderboard_mode menu = menu.leaderboard_mode
+
 let init labels = 
   let mp_fields = [("Username", {
       dimensions= (200,30);
@@ -156,6 +150,7 @@ let init labels =
       coords= (300,420)
     })] in
   {
+    leaderboard_mode = false;
     username = "";
     start_game = false;
     multiplayer = false;
