@@ -62,8 +62,10 @@ val adjust_music : t -> float -> t
 
 val volume : t -> float
 
-val update_address : t -> string -> t
+val update_text : t -> string -> t
 
 val address : t -> string
 
 val text : t -> string -> string 
+
+val selected_text_field : t -> string

@@ -3,7 +3,6 @@ open Str
 
 
 type m_field = {
-  selected: bool;
   dimensions:(int*int);
   coords: (int*int)
 }
@@ -13,6 +12,7 @@ type t = {
   start_game: bool;
   multiplayer: bool;
   address: string;
+  selected_text_field: string;
   is_host: bool;
   buttons: (string*button) list;
   text_fields: (string*m_field) list;
@@ -37,7 +37,6 @@ let init_empty_button b_type = {
 
 let init_empty_text label = 
   (label, {
-      selected=false;
       dimensions= (0,0);
       coords= (0,0)
     })
@@ -53,7 +52,12 @@ let b_type button =
 
 let toggle_multiplayer menu = {menu with multiplayer = not menu.multiplayer}
 
-let update_address menu address = {menu with address = String.trim address}
+let update_text menu text = 
+  let label = menu.selected_text_field in
+  match label with
+  | "Address" -> {menu with address = String.trim text}
+  | "Username" -> {menu with username = String.trim text}
+  | _ -> failwith ("invalid input field: "^label)
 
 let address menu = menu.address
 
@@ -125,31 +129,37 @@ let button_selected menu label =
   let button = List.assoc label menu.buttons in
   button.selected
 
-let textfield_selected menu label =
-  let field = List.assoc label menu.text_fields in
-  field.selected
+let selected_text_field menu =
+  menu.selected_text_field
 
 let mouse_clicked menu click_coords =
-  let updated_fields = List.fold_left 
-      (fun fields (label, (field:m_field)) ->
+  let selected_text_field = List.fold_left
+      (fun selected (label, (field:m_field)) ->
          if in_input (field.coords) (field.dimensions) click_coords 
-         then (label,field)::fields
-         else (label,field)::fields
-      ) [] menu.text_fields in
+         then label
+         else selected
+      ) menu.selected_text_field menu.text_fields in
   let updated_menu = 
     List.fold_left (fun  menu (label, button) ->
         if in_input (button.coords) (button.dimensions) click_coords 
         then button.on_click menu
         else menu
       ) menu menu.buttons
-  in { updated_menu with text_fields = updated_fields}
+  in { updated_menu with selected_text_field = selected_text_field}
 
 let init labels = 
-  let mp_fields = [init_empty_text "Host"; init_empty_text "Address"] in
+  let mp_fields = [("Username", {
+      dimensions= (200,30);
+      coords= (300,300)
+    }); ("Address", {
+      dimensions= (200,30);
+      coords= (300,420)
+    })] in
   {
     username = "";
     start_game = false;
     multiplayer = false;
+    selected_text_field= "Username";
     address = "";
     is_host = false;
     buttons = List.map 

@@ -53,20 +53,23 @@ let rec handle_events (menu : t) : t =
       | `Key_down -> 
         let key = (Sdl.Event.(get event keyboard_keycode)) in begin
           if key = Sdl.K.backspace then
-            let text = Menu_state.address menu.menu in
+            let text = 
+              Menu_state.selected_text_field menu.menu  |> Menu_state.text menu.menu
+            in
             let text_length = String.length text in
             if text <> "" then 
               let updated_menu = String.sub text 0 (text_length-1) 
-                                 |> Menu_state.update_address menu.menu in
+                                 |> Menu_state.update_text menu.menu in
               {menu with menu = updated_menu }
             else menu
           else menu
         end
       | `Text_input -> 
         let text = Sdl.Event.(get event text_input_text) in
-        let address = Menu_state.address menu.menu in
-        let updated_menu = Menu_state.update_address (menu.menu) 
-            (address^text) in
+        let current_text = Menu_state.selected_text_field menu.menu 
+                           |> Menu_state.text menu.menu in
+        let updated_menu = Menu_state.update_text (menu.menu) 
+            (current_text^text) in
         {menu with menu = updated_menu}
       | `Quit ->
         Sdl.log "Quit event handled from main menu";

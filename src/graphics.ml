@@ -180,7 +180,14 @@ end
 (** The module that is equivalent to a Menu_state. *)
 module M = Menu_state
 
-let render_field ctx menu (x,y) (w,h) label =
+let render_field ctx menu (x,y) (w,h) label = begin
+  if Menu_state.selected_text_field menu = label then begin
+    set_color (0, 0, 0) ctx; 
+    let border = 5 in
+    let outline = Sdl.Rect.create (x-(border)/2) (y-(border)/2) (w+border) 
+        (h+border) in
+    fill_rect outline ctx;
+  end;
   set_color (255, 255, 255) ctx; 
   let rect = Sdl.Rect.create x y w h in begin
     Sdl.set_text_input_rect (Some rect);
@@ -192,6 +199,7 @@ let render_field ctx menu (x,y) (w,h) label =
       draw_text ctx 18 text bg fg (x,y);
       Sdl.start_text_input();
   end
+end
 
 
 let render_fields (ctx:t) (menu:M.t) coords dimensions = begin
@@ -236,7 +244,7 @@ let render_checkbox_button ctx menu (x, y) (w, h) (label:string) selected = begi
     else if label = "Host game?"  then begin
       if Menu_state.is_host menu then
         draw_text ctx 16 "X" bg fg (x,y);
-      render_field ctx menu (x,y+30) (200,h) "Address";
+      render_field ctx menu (300,420) (200,30) "Address";
       (M.get_button menu label |> M.update_button (x,y) (w,h), 80)
     end
     else 
@@ -267,7 +275,7 @@ let render_buttons (ctx:t) (menu:M.t) (coords:int*int) : M.t =
   let (x, y) = coords in
   let x_offset = x / 2 in
   let buttons = M.buttons menu in
-  let height = ref (y + 80) in
+  let height = ref y in
   let menu_r = ref menu in 
   let updated_buttons = List.mapi (fun i (label, button) -> 
       let (b, h) = rendered_button ctx button height (x+x_offset,y) menu_r label
@@ -289,8 +297,8 @@ let render_menu (ctx:t) (menu:M.t) : M.t = begin
   let rect = Sdl.Rect.create x y menu_w menu_h in
   fill_rect rect ctx;
   render_title ctx "DUCKTRIS" x y;
-  render_field ctx menu (x,y+40) (200,h) "Username";
-  render_buttons ctx menu (x,y+100)
+  render_field ctx menu (300,300) (200,30) "Username";
+  render_buttons ctx menu (x,y+150)
 end
 
 (** [menu_maker ctx items pos] renders a menu consisting of [items], where
