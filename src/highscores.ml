@@ -1,7 +1,4 @@
-
-
 type t = (int*string)
-
 
 (** [get_name lst] is [lst] combined into a single, safe string. *)
 let rec get_name lst = 
@@ -11,7 +8,6 @@ let rec get_name lst =
     if next_word = "" 
     then (String.escaped h)^(next_word)
     else (String.escaped h)^" "^(next_word)
-
 
 (** [high_score_getter_helper lst] is [lst] converted into a list of highscores.
 *)
@@ -23,8 +19,6 @@ let rec high_score_getter_helper lst =
     match int_of_string_opt (List.hd string_list) with
     | None -> (0,get_name (List.tl string_list))::high_score_getter_helper t
     | Some x -> (x,get_name (List.tl string_list))::high_score_getter_helper t
-
-
 
 let high_score_getter () =
   try let channel = 
@@ -38,7 +32,6 @@ let high_score_getter () =
       open_out "resources/ifyouchangethisfileyouwillgetazero.txt" in
     close_out make_channel; []
 
-
 (** [sort_scores new_score lst] is the list of sorted scores including
     [new_score]. *)
 let rec sort_scores (new_score:t) (lst:t list) = 
@@ -50,12 +43,10 @@ let rec sort_scores (new_score:t) (lst:t list) =
     then h::(sort_scores new_score t)
     else new_score::lst
 
-
 (** [make_score_list highscore] is the sorted list of highscores with 
     [highscore] included in that list. *)
 let make_score_list highscore =
   sort_scores highscore (high_score_getter ())
-
 
 (** [write_top_counter write_to score_list counter] writes the top [counter]
     values of [score_list] to [write_to]. If [score_list] is shorter than 
@@ -69,7 +60,6 @@ let rec write_top_counter write_to score_list counter =
     | h::t -> Printf.fprintf write_to "%s\n" 
                 (Int.to_string (fst h) ^ " " ^ String.escaped (snd h));
       write_top_counter write_to t (counter - 1)
-
 
 let write_high_score highscore = 
   let score_list = make_score_list highscore in

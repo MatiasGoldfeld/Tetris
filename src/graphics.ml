@@ -101,7 +101,7 @@ let init (duck_mode:bool) (path:string) : t =
     pixel_format = pixel_format;
     duck_mode = duck_mode;
     duck_images = duck_path_dict path renderer Tetromino.colors 1;
-    bg_color = (0, 0, 0);
+    bg_color = (31, 31, 31);
     font = Ttf.open_font (path ^ "fonts/PTS55F.ttf") 60
            |> unpack "Failed loading font";
   }
@@ -401,7 +401,6 @@ module MakeGameRenderer (S : State.S) = struct
     let bg = let r, g, b = ctx.bg_color in Sdl.Color.create r g b 255 in
     let fg = Sdl.Color.create 200 200 200 255 in
     let t_score = "Score: " ^ Int.to_string (S.score state) in
-    let t_time  = "Time: " ^ "idk" in
     let t_lines = "Lines: " ^ Int.to_string (S.lines state) in
     let t_level = "Level: " ^ Int.to_string (S.level state) in
     let x_offset, y_offset = size, size * 8 in
@@ -419,9 +418,8 @@ module MakeGameRenderer (S : State.S) = struct
         draw_tetromino ctx piece 0 (x + size * 2) (y + size * 2) size
     end;
     draw_text ctx size t_score fg bg (x + x_offset, y + y_offset);
-    draw_text ctx size t_time  fg bg (x + x_offset, y + y_offset + size * 2);
-    draw_text ctx size t_lines fg bg (x + x_offset, y + y_offset + size * 4);
-    draw_text ctx size t_level fg bg (x + x_offset, y + y_offset + size * 6)
+    draw_text ctx size t_lines fg bg (x + x_offset, y + y_offset + size * 2);
+    draw_text ctx size t_level fg bg (x + x_offset, y + y_offset + size * 4)
 
   let render (ctx:t) (states:S.t list) (menu:(string * bool) list) : unit =
     let state = List.hd states in
