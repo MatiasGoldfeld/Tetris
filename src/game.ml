@@ -150,7 +150,11 @@ module Make (S : State.S) = struct
     let state, events = S.handle_events game.play_state in
     let game_ref = ref { game with play_state = state } in
     let handle_event = function
-      | State.Endgame -> game_ref := { !game_ref with state = Gameover }
+      | State.Endgame -> begin
+          let score = S.score state in
+          Highscores.write_high_score (score,"user123");
+          game_ref := { !game_ref with state = Gameover }
+        end
       | x -> Audio.play_sound game.audio x
     in List.iter handle_event events;
     !game_ref
