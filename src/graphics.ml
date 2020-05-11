@@ -180,6 +180,20 @@ end
 (** The module that is equivalent to a Menu_state. *)
 module M = Menu_state
 
+let render_field ctx menu (x,y) (w,h) label =
+  set_color (255, 255, 255) ctx; 
+  let rect = Sdl.Rect.create x y w h in begin
+    Sdl.set_text_input_rect (Some rect);
+    fill_rect rect ctx;
+    let text = Menu_state.text menu label in 
+    if text <> "" then
+      let bg = Sdl.Color.create 100 100 100 255 in
+      let fg = Sdl.Color.create 200 200 200 255 in
+      draw_text ctx 18 text bg fg (x,y);
+      Sdl.start_text_input();
+  end
+
+
 let render_fields (ctx:t) (menu:M.t) coords dimensions = begin
   set_color (255, 255, 255) ctx; 
   let (x,y) = coords in
@@ -222,7 +236,7 @@ let render_checkbox_button ctx menu (x, y) (w, h) (label:string) selected = begi
     else if label = "Host game?"  then begin
       if Menu_state.is_host menu then
         draw_text ctx 16 "X" bg fg (x,y);
-      render_fields ctx menu (x,y+30) (200,h);
+      render_field ctx menu (x,y+30) (200,h) "Address";
       (M.get_button menu label |> M.update_button (x,y) (w,h), 80)
     end
     else 
@@ -275,7 +289,8 @@ let render_menu (ctx:t) (menu:M.t) : M.t = begin
   let rect = Sdl.Rect.create x y menu_w menu_h in
   fill_rect rect ctx;
   render_title ctx "DUCKTRIS" x y;
-  render_buttons ctx menu (x,y)
+  render_field ctx menu (x,y+40) (200,h) "Username";
+  render_buttons ctx menu (x,y+100)
 end
 
 (** [menu_maker ctx items pos] renders a menu consisting of [items], where

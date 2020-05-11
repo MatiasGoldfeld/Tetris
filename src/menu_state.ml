@@ -3,17 +3,19 @@ open Str
 
 
 type m_field = {
-  text: string;
-  valid: bool;
+  selected: bool;
+  dimensions:(int*int);
+  coords: (int*int)
 }
 
 type t = {
+  username: string;
   start_game: bool;
   multiplayer: bool;
   address: string;
   is_host: bool;
   buttons: (string*button) list;
-  multiplayer_fields: (string*m_field) list;
+  text_fields: (string*m_field) list;
   volume: float;
   level: int;
 } and button = {
@@ -35,8 +37,9 @@ let init_empty_button b_type = {
 
 let init_empty_text label = 
   (label, {
-      text = "";
-      valid= false;
+      selected=false;
+      dimensions= (0,0);
+      coords= (0,0)
     })
 
 let get_button menu label = List.assoc label menu.buttons
@@ -50,7 +53,7 @@ let b_type button =
 
 let toggle_multiplayer menu = {menu with multiplayer = not menu.multiplayer}
 
-let update_address menu address = {menu with address = String.trim address }
+let update_address menu address = {menu with address = String.trim address}
 
 let address menu = menu.address
 
@@ -63,7 +66,7 @@ let make_button (coords:int*int) (dimensions:int*int) b_type on_click =
     selected = false;
   }
 
-let multiplayer_fields menu = menu.multiplayer_fields
+let text_fields menu = menu.text_fields
 
 let update_button (coords:int*int) (dimensions:int*int) button =
   {
@@ -81,9 +84,9 @@ let set_start_game menu value =
         "\\b(25[0-5]\\|2[0-4][0-9]\\|1[0-9][0-9]\\|[1-9]?[0-9])\\.
         (25[0-5]\\|2[0-4][0-9]\\|1[0-9][0-9]\\|[1-9]?[0-9])\\.
         (25[0-5]\\|2[0-4][0-9]\\|1[0-9][0-9]\\|[1-9]?[0-9])\\.
-        (25[0-5]\\|2[0-4][0-9]\\|1[0-9][0-9]\\|[1-9]?[0-9])\\b" 
+        (25[0-5]\\|2[0-4][0-9]\\|1[0-9][0-9]\\|[1-9]?[0-9])\\b
+        :[1-9]\\|[1-9][0-9]\\|[1-9][0-9][0-9]\\|[1-9][0-9][0-9][0-9]" 
     in
-    print_endline menu.address;
     if Str.string_match regex menu.address 0 
     then value
     else false
@@ -93,14 +96,19 @@ let set_start_game menu value =
 let should_start_game menu = 
   menu.start_game
 
+let text menu text_field = 
+  match text_field with
+  | "Address" -> menu.address
+  | "Username" -> menu.username
+  | _ -> failwith "No text field exists with that label."
 
-let in_button button click_coords : bool = 
-  let (button_x, button_y) = button.coords in
+let in_input coords dimensions click_coords : bool = 
+  let (rect_x, rect_y) = coords in
   let (click_x, click_y) = click_coords in
-  let in_x_range = button_x <= click_x 
-                   && button_x+(fst button.dimensions) >= click_x in
-  let in_y_range = button_y <= click_y 
-                   && button_y+(snd button.dimensions) >= click_y in
+  let in_x_range = rect_x <= click_x 
+                   && rect_x+(fst dimensions) >= click_x in
+  let in_y_range = rect_y <= click_y 
+                   && rect_y+(snd dimensions) >= click_y in
   in_x_range && in_y_range
 
 let is_multiplayer menu = menu.multiplayer
@@ -117,16 +125,29 @@ let button_selected menu label =
   let button = List.assoc label menu.buttons in
   button.selected
 
+let textfield_selected menu label =
+  let field = List.assoc label menu.text_fields in
+  field.selected
+
 let mouse_clicked menu click_coords =
-  List.fold_left (fun  menu (label, button) ->
-      if in_button button click_coords 
-      then button.on_click menu
-      else menu
-    ) menu menu.buttons
+  let updated_fields = List.fold_left 
+      (fun fields (label, (field:m_field)) ->
+         if in_input (field.coords) (field.dimensions) click_coords 
+         then (label,field)::fields
+         else (label,field)::fields
+      ) [] menu.text_fields in
+  let updated_menu = 
+    List.fold_left (fun  menu (label, button) ->
+        if in_input (button.coords) (button.dimensions) click_coords 
+        then button.on_click menu
+        else menu
+      ) menu menu.buttons
+  in { updated_menu with text_fields = updated_fields}
 
 let init labels = 
   let mp_fields = [init_empty_text "Host"; init_empty_text "Address"] in
   {
+    username = "";
     start_game = false;
     multiplayer = false;
     address = "";
@@ -135,7 +156,7 @@ let init labels =
         (fun (label, b_type, on_click) -> 
            (label, make_button (0,0) (0,0) b_type on_click))
         labels;
-    multiplayer_fields = mp_fields;
+    text_fields = mp_fields;
     volume = 0.05;
     level = 0;
   }

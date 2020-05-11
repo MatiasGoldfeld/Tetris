@@ -11,9 +11,9 @@ type m_field
 (** A representation of the menu *)
 type t
 
-(** [multiplayer_fields menu] is the text input fields associated
+(** [text_fields menu] is the text input fields associated
     with multiplayer. *)
-val multiplayer_fields : t -> (string * m_field) list
+val text_fields : t -> (string * m_field) list
 
 (** [ make_button coords size on_click ] creates a button at coordinates 
     [coords] and of size [size]. When the button is clicked, [on_click] is
@@ -65,3 +65,5 @@ val volume : t -> float
 val update_address : t -> string -> t
 
 val address : t -> string
+
+val text : t -> string -> string 
