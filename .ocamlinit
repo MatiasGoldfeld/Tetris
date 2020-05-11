@@ -1,2 +1,3 @@
 #require "oUnit";;
+#load "str.cma";;
 #directory "_build/src";;
