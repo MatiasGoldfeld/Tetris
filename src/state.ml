@@ -263,7 +263,7 @@ module Local = struct
       has a value. Otherwise, it is Empty. *)
   let ghost_busters state check r =
     match check (r - state.ghost_row + field_height state) with
-    | Some color -> Ghost (color, 95)
+    | Some color -> Ghost (color, 165)
     | None -> Empty
 
 

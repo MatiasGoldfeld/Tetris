@@ -72,7 +72,7 @@ let defaults : t list = [
   };
   { (* s tetromino *)
     tetromino_type = "s";
-    color = (0, 128, 0);
+    color = (50, 205, 50);
     shape = [[0;1;1];[1;1;0];[0;0;0]];
     wall_kicks = wall_kicks_3;
   };
@@ -84,7 +84,7 @@ let defaults : t list = [
   };
   { (* t tetromino *)
     tetromino_type = "t";
-    color = (128, 0, 128);
+    color = (153, 50, 204);
     shape = [[0;1;0];[1;1;1];[0;0;0]];
     wall_kicks = wall_kicks_3;
   };

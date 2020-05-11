@@ -101,7 +101,7 @@ let init (duck_mode:bool) (path:string) : t =
     pixel_format = pixel_format;
     duck_mode = duck_mode;
     duck_images = duck_path_dict path renderer Tetromino.colors 1;
-    bg_color = (80, 80, 80);
+    bg_color = (0, 0, 0);
     font = Ttf.open_font (path ^ "fonts/PTS55F.ttf") 60
            |> unpack "Failed loading font";
   }
